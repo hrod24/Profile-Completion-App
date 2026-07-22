@@ -6,30 +6,30 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Department extends Model
+class BusinessUnit extends Model
 {
-    protected $table = 'departments';
+    protected $table = 'business_units';
 
-    protected $primaryKey = 'department_code';
+    protected $primaryKey = 'business_unit_code';
 
     public $incrementing = false;
 
     protected $keyType = 'string';
 
     protected $fillable = [
-        'department_code',
-        'department_name',
+        'business_unit_code',
+        'business_unit_name',
     ];
 
-    public function businessUnits(): BelongsToMany
+    public function departments(): BelongsToMany
     {
         return $this->belongsToMany(
-            BusinessUnit::class,
+            Department::class,
             'business_unit_and_departments',
-            'department_code',
             'business_unit_code',
             'department_code',
-            'business_unit_code'
+            'business_unit_code',
+            'department_code'
         );
     }
 
@@ -37,8 +37,8 @@ class Department extends Model
     {
         return $this->hasMany(
             employee_details::class,
-            'department_org_element_2',
-            'department_code'
+            'business_unit_org_element_1',
+            'business_unit_code'
         );
     }
 }

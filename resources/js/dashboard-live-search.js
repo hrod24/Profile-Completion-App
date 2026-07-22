@@ -1,445 +1,838 @@
-document.addEventListener("DOMContentLoaded", () => {
-    const form = document.querySelector(
-        "[data-employee-search-form]"
-    );
-
-    /*
-     * File ini hanya berjalan pada halaman dashboard
-     * yang memiliki form pencarian employee.
-     */
-    if (!form) {
-        return;
-    }
-
-    const input = form.querySelector(
-        "[data-employee-search-input]"
-    );
-
-    const resetButton = form.querySelector(
-        "[data-employee-search-reset]"
-    );
-
-    const results = document.querySelector(
-        "[data-employee-search-results]"
-    );
-
-    const statistics = document.querySelector(
-    "[data-dashboard-statistics]"
-);
-
-    const loadingIndicator = document.querySelector(
-        "[data-employee-search-loading]"
-    );
-
-    const status = document.querySelector(
-        "[data-employee-search-status]"
-    );
-
-    /*
-     * Company filter.
-     */
-    const companyFilter = document.querySelector(
-        "[data-company-filter]"
-    );
-
-    const companyCheckboxes = Array.from(
-        document.querySelectorAll(
-            "[data-company-filter-checkbox]"
-        )
-    );
-
-    const companyFilterClear =
-        companyFilter?.querySelector(
-            "[data-company-filter-clear]"
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+        /*
+         * ============================================================
+         * 1. AMBIL ELEMEN UTAMA DASHBOARD
+         * ============================================================
+         */
+        const form = document.querySelector(
+            "[data-employee-search-form]"
         );
 
-    const companyFilterLabel =
-        companyFilter?.querySelector(
-            "[data-company-filter-label]"
-        );
-
-    if (!input || !results) {
-        return;
-    }
-
-    let debounceTimer = null;
-    let activeRequest = null;
-
-    const setLoading = (isLoading) => {
-        results.setAttribute(
-            "aria-busy",
-            isLoading ? "true" : "false"
-        );
-
-        if (loadingIndicator) {
-            loadingIndicator.hidden = !isLoading;
-
-            loadingIndicator.style.display =
-                isLoading ? "flex" : "none";
-        }
-
-        input.classList.toggle(
-            "pr-11",
-            isLoading
-        );
-    };
-
-    /*
-     * Memperbarui tulisan tombol filter.
-     */
-    const updateCompanyFilterLabel = () => {
-        if (!companyFilterLabel) {
+        /*
+         * File ini juga di-import pada halaman lain.
+         * Jika form dashboard tidak ada, hentikan script.
+         */
+        if (!form) {
             return;
         }
 
-        const selectedCheckboxes =
-            companyCheckboxes.filter(
-                (checkbox) => checkbox.checked
-            );
-
-        const selectedCount =
-            selectedCheckboxes.length;
-
-        if (selectedCount === 0) {
-            companyFilterLabel.textContent =
-                "Filter by Company";
-
-            return;
-        }
-
-        if (selectedCount === 1) {
-            const checkbox =
-                selectedCheckboxes[0];
-
-            const label = document.querySelector(
-                `label[for="${CSS.escape(checkbox.id)}"]`
-            );
-
-            companyFilterLabel.textContent =
-                label?.textContent.trim() ??
-                "Company (1)";
-
-            return;
-        }
-
-        companyFilterLabel.textContent =
-            `Company (${selectedCount})`;
-    };
-
-    /*
-     * Membuat URL berdasarkan search dan company
-     * yang sedang dipilih.
-     */
-    const createSearchUrl = () => {
-        const url = new URL(
-            form.action,
-            window.location.origin
+        const input = form.querySelector(
+            "[data-employee-search-input]"
         );
 
-        const keyword = input.value.trim();
-
-        if (keyword !== "") {
-            url.searchParams.set(
-                "search",
-                keyword
+        const resetSearchButton =
+            form.querySelector(
+                "[data-employee-search-reset]"
             );
+
+        const results = document.querySelector(
+            "[data-employee-search-results]"
+        );
+
+        const statistics =
+            document.querySelector(
+                "[data-dashboard-statistics]"
+            );
+
+        const loadingIndicator =
+            document.querySelector(
+                "[data-employee-search-loading]"
+            );
+
+        const status = document.querySelector(
+            "[data-employee-search-status]"
+        );
+
+        /*
+         * Root dari seluruh filter.
+         *
+         * Fallback data-company-filter ditambahkan agar tetap
+         * kompatibel dengan versi component lama.
+         */
+        const filtersRoot =
+            document.querySelector(
+                "[data-dashboard-filters]"
+            ) ??
+            document.querySelector(
+                "[data-company-filter]"
+            );
+
+        /*
+         * Isi <ul> department akan diganti melalui AJAX.
+         */
+        const departmentOptions =
+            document.querySelector(
+                "[data-department-filter-options]"
+            );
+
+        const companyFilterLabel =
+            document.querySelector(
+                "[data-company-filter-label]"
+            );
+
+        const businessUnitFilterLabel =
+            document.querySelector(
+                "[data-business-unit-filter-label]"
+            );
+
+        const departmentFilterLabel =
+            document.querySelector(
+                "[data-department-filter-label]"
+            );
+
+        if (!input || !results) {
+            return;
         }
 
-        companyCheckboxes.forEach(
-            (checkbox) => {
-                if (!checkbox.checked) {
+        /*
+         * Timer untuk debounce live search.
+         */
+        let debounceTimer = null;
+
+        /*
+         * Menyimpan request yang sedang berjalan.
+         *
+         * Jika user mengganti filter terlalu cepat,
+         * request sebelumnya akan dibatalkan.
+         */
+        let activeRequest = null;
+
+        /*
+         * ============================================================
+         * 2. HELPER CHECKBOX
+         * ============================================================
+         */
+
+        /*
+         * Selector checkbox setiap jenis filter.
+         */
+        const checkboxSelectors = {
+            company:
+                "[data-company-filter-checkbox]",
+
+            businessUnit:
+                "[data-business-unit-filter-checkbox]",
+
+            department:
+                "[data-department-filter-checkbox]",
+        };
+
+        /*
+         * Ambil checkbox dari DOM setiap kali fungsi dipanggil.
+         *
+         * Department checkbox tidak boleh disimpan satu kali saja,
+         * karena isi dropdown department diganti melalui AJAX.
+         */
+        const getCheckboxes = (selector) => {
+            return Array.from(
+                document.querySelectorAll(
+                    selector
+                )
+            );
+        };
+
+        /*
+         * Ambil seluruh value checkbox yang sedang dicentang.
+         */
+        const getCheckedValues = (
+            selector
+        ) => {
+            return getCheckboxes(selector)
+                .filter(
+                    (checkbox) =>
+                        checkbox.checked
+                )
+                .map(
+                    (checkbox) =>
+                        checkbox.value
+                );
+        };
+
+        /*
+         * Menyesuaikan checkbox berdasarkan URL.
+         *
+         * Digunakan ketika user menekan tombol:
+         * - Back.
+         * - Forward.
+         */
+        const syncCheckboxesFromUrl = (
+            selector,
+            parameterName,
+            url
+        ) => {
+            const selectedValues =
+                url.searchParams.getAll(
+                    parameterName
+                );
+
+            getCheckboxes(selector).forEach(
+                (checkbox) => {
+                    checkbox.checked =
+                        selectedValues.includes(
+                            checkbox.value
+                        );
+                }
+            );
+        };
+
+        /*
+         * ============================================================
+         * 3. LOADING STATE
+         * ============================================================
+         */
+        const setLoading = (isLoading) => {
+            results.setAttribute(
+                "aria-busy",
+                isLoading
+                    ? "true"
+                    : "false"
+            );
+
+            if (loadingIndicator) {
+                loadingIndicator.hidden =
+                    !isLoading;
+
+                loadingIndicator.style.display =
+                    isLoading
+                        ? "flex"
+                        : "none";
+            }
+
+            input.classList.toggle(
+                "pr-11",
+                isLoading
+            );
+        };
+
+        /*
+         * ============================================================
+         * 4. LABEL TOMBOL FILTER
+         * ============================================================
+         */
+        const updateFilterLabel = ({
+            labelElement,
+            checkboxSelector,
+            defaultText,
+        }) => {
+            if (!labelElement) {
+                return;
+            }
+
+            const selectedCount =
+                getCheckedValues(
+                    checkboxSelector
+                ).length;
+
+            labelElement.textContent =
+                selectedCount > 0
+                    ? `${defaultText} (${selectedCount})`
+                    : defaultText;
+        };
+
+        const updateAllFilterLabels = () => {
+            updateFilterLabel({
+                labelElement:
+                    companyFilterLabel,
+
+                checkboxSelector:
+                    checkboxSelectors.company,
+
+                defaultText:
+                    "Filter Company",
+            });
+
+            updateFilterLabel({
+                labelElement:
+                    businessUnitFilterLabel,
+
+                checkboxSelector:
+                    checkboxSelectors
+                        .businessUnit,
+
+                defaultText:
+                    "Filter Division",
+            });
+
+            updateFilterLabel({
+                labelElement:
+                    departmentFilterLabel,
+
+                checkboxSelector:
+                    checkboxSelectors.department,
+
+                defaultText:
+                    "Filter Department",
+            });
+        };
+
+        /*
+         * ============================================================
+         * 5. BUAT URL SEARCH DAN FILTER
+         * ============================================================
+         */
+        const createSearchUrl = () => {
+            /*
+             * Mulai dari URL action form agar parameter lama
+             * yang sudah tidak dipilih tidak ikut terbawa.
+             */
+            const url = new URL(
+                form.action,
+                window.location.origin
+            );
+
+            const keyword =
+                input.value.trim();
+
+            if (keyword !== "") {
+                url.searchParams.set(
+                    "search",
+                    keyword
+                );
+            }
+
+            /*
+             * Company.
+             */
+            getCheckedValues(
+                checkboxSelectors.company
+            ).forEach((value) => {
+                url.searchParams.append(
+                    "company[]",
+                    value
+                );
+            });
+
+            /*
+             * Business Unit / Division.
+             */
+            getCheckedValues(
+                checkboxSelectors.businessUnit
+            ).forEach((value) => {
+                url.searchParams.append(
+                    "business_unit[]",
+                    value
+                );
+            });
+
+            /*
+             * Department.
+             */
+            getCheckedValues(
+                checkboxSelectors.department
+            ).forEach((value) => {
+                url.searchParams.append(
+                    "department[]",
+                    value
+                );
+            });
+
+            return url;
+        };
+
+        /*
+         * ============================================================
+         * 6. REQUEST AJAX UTAMA
+         * ============================================================
+         */
+        const loadResults = async (
+            url,
+            {
+                updateHistory = true,
+            } = {}
+        ) => {
+            /*
+             * Batalkan request sebelumnya.
+             */
+            activeRequest?.abort();
+
+            const requestController =
+                new AbortController();
+
+            activeRequest =
+                requestController;
+
+            setLoading(true);
+
+            try {
+                const response = await fetch(
+                    url.toString(),
+                    {
+                        method: "GET",
+
+                        headers: {
+                            Accept:
+                                "application/json",
+
+                            "X-Requested-With":
+                                "XMLHttpRequest",
+                        },
+
+                        signal:
+                            requestController
+                                .signal,
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(
+                        `Request failed with status ${response.status}`
+                    );
+                }
+
+                const data =
+                    await response.json();
+
+                /*
+                 * Perbarui tabel dan pagination.
+                 */
+                if (
+                    typeof data.html ===
+                    "string"
+                ) {
+                    results.innerHTML =
+                        data.html;
+                }
+
+                /*
+                 * Perbarui card dan progress.
+                 */
+                if (
+                    statistics &&
+                    typeof data.statisticsHtml ===
+                        "string"
+                ) {
+                    statistics.innerHTML =
+                        data.statisticsHtml;
+                }
+
+                /*
+                 * Perbarui isi dropdown department.
+                 *
+                 * Saat business unit berubah, server akan
+                 * mengembalikan department yang sesuai.
+                 */
+                if (
+                    departmentOptions &&
+                    typeof data.departmentOptionsHtml ===
+                        "string"
+                ) {
+                    departmentOptions.innerHTML =
+                        data.departmentOptionsHtml;
+                }
+
+                /*
+                 * Department checkbox baru sudah masuk ke DOM.
+                 * Hitung ulang label filter.
+                 */
+                updateAllFilterLabels();
+
+                /*
+                 * Controller dapat membuang department lama
+                 * yang tidak lagi valid setelah business unit berubah.
+                 *
+                 * Karena itu URL harus diperbaiki berdasarkan
+                 * selectedDepartments dari response server.
+                 */
+                const canonicalUrl =
+                    new URL(
+                        url.toString()
+                    );
+
+                canonicalUrl.searchParams.delete(
+                    "department[]"
+                );
+
+                const validDepartments =
+                    Array.isArray(
+                        data.selectedDepartments
+                    )
+                        ? data.selectedDepartments
+                        : [];
+
+                validDepartments.forEach(
+                    (departmentCode) => {
+                        canonicalUrl.searchParams.append(
+                            "department[]",
+                            departmentCode
+                        );
+                    }
+                );
+
+                /*
+                 * Perbarui URL browser tanpa reload halaman.
+                 */
+                if (updateHistory) {
+                    window.history.replaceState(
+                        {},
+                        "",
+                        canonicalUrl
+                    );
+                }
+
+                /*
+                 * Perbarui tulisan jumlah hasil.
+                 */
+                if (status) {
+                    const total =
+                        Number(data.total ?? 0);
+
+                    status.textContent =
+                        `${total} employee found / ` +
+                        `${total} employee ditemukan`;
+                }
+
+                /*
+                 * Tampilkan tombol reset search hanya ketika
+                 * input search memiliki isi.
+                 */
+                resetSearchButton?.classList.toggle(
+                    "hidden",
+                    input.value.trim() === ""
+                );
+            } catch (error) {
+                /*
+                 * AbortError bukan kegagalan.
+                 *
+                 * Error ini muncul ketika request lama sengaja
+                 * dibatalkan karena ada request yang lebih baru.
+                 */
+                if (
+                    error.name ===
+                    "AbortError"
+                ) {
                     return;
                 }
 
-                url.searchParams.append(
-                    "company[]",
-                    checkbox.value
+                console.error(
+                    "Dashboard search/filter failed:",
+                    error
                 );
+
+                if (status) {
+                    status.textContent =
+                        "Search failed / Pencarian gagal";
+                }
+            } finally {
+                /*
+                 * Request lama tidak boleh mematikan loading
+                 * milik request yang lebih baru.
+                 */
+                if (
+                    activeRequest ===
+                    requestController
+                ) {
+                    setLoading(false);
+                    activeRequest = null;
+                }
             }
-        );
+        };
 
-        return url;
-    };
+        /*
+         * ============================================================
+         * 7. LIVE SEARCH
+         * ============================================================
+         */
+        input.addEventListener(
+            "input",
+            () => {
+                window.clearTimeout(
+                    debounceTimer
+                );
 
-    /*
-     * Menyesuaikan checkbox berdasarkan URL,
-     * digunakan saat browser back/forward.
-     */
-    const syncFilterFromUrl = (url) => {
-        const selectedCompanies =
-            url.searchParams.getAll(
-                "company[]"
-            );
-
-        companyCheckboxes.forEach(
-            (checkbox) => {
-                checkbox.checked =
-                    selectedCompanies.includes(
-                        checkbox.value
+                debounceTimer =
+                    window.setTimeout(
+                        () => {
+                            loadResults(
+                                createSearchUrl()
+                            );
+                        },
+                        350
                     );
             }
         );
 
-        updateCompanyFilterLabel();
-    };
-
-    const loadResults = async (
-        url,
-        { updateHistory = true } = {}
-    ) => {
         /*
-         * Batalkan request sebelumnya jika user
-         * mengganti keyword/filter dengan cepat.
+         * Submit manual melalui tombol search.
          */
-        activeRequest?.abort();
+        form.addEventListener(
+            "submit",
+            (event) => {
+                event.preventDefault();
 
-        const requestController =
-            new AbortController();
-
-        activeRequest = requestController;
-
-        setLoading(true);
-
-        try {
-            const response = await fetch(url, {
-                method: "GET",
-
-                headers: {
-                    Accept: "application/json",
-                    "X-Requested-With":
-                        "XMLHttpRequest",
-                },
-
-                signal:
-                    requestController.signal,
-            });
-
-            if (!response.ok) {
-                throw new Error(
-                    `Request failed: ${response.status}`
+                window.clearTimeout(
+                    debounceTimer
                 );
-            }
 
-            const data = await response.json();
-
-            results.innerHTML = data.html;
-
-            if (
-                statistics &&
-                typeof data.statisticsHtml === "string"
-            ) {
-                statistics.innerHTML =
-                    data.statisticsHtml;
-}
-
-            if (status) {
-                status.textContent =
-                    `${data.total} employee found / ` +
-                    `${data.total} employee ditemukan`;
-            }
-
-            if (updateHistory) {
-                window.history.replaceState(
-                    {},
-                    "",
-                    url
-                );
-            }
-
-            resetButton?.classList.toggle(
-                "hidden",
-                input.value.trim() === ""
-            );
-        } catch (error) {
-            if (error.name === "AbortError") {
-                return;
-            }
-
-            console.error(
-                "Employee search/filter failed:",
-                error
-            );
-
-            if (status) {
-                status.textContent =
-                    "Search failed / Pencarian gagal";
-            }
-        } finally {
-            /*
-             * Request lama tidak boleh mematikan
-             * indikator loading milik request terbaru.
-             */
-            if (
-                activeRequest ===
-                requestController
-            ) {
-                setLoading(false);
-                activeRequest = null;
-            }
-        }
-    };
-
-    /*
-     * Live search setelah user berhenti mengetik.
-     */
-    input.addEventListener("input", () => {
-        window.clearTimeout(
-            debounceTimer
-        );
-
-        debounceTimer =
-            window.setTimeout(() => {
                 loadResults(
                     createSearchUrl()
                 );
-            }, 350);
-    });
+            }
+        );
 
-    /*
-     * Tombol search.
-     */
-    form.addEventListener(
-        "submit",
-        (event) => {
-            event.preventDefault();
+        /*
+         * Reset hanya keyword search.
+         *
+         * Company, business unit, dan department
+         * tetap dipertahankan.
+         */
+        resetSearchButton?.addEventListener(
+            "click",
+            (event) => {
+                event.preventDefault();
 
-            window.clearTimeout(
-                debounceTimer
-            );
+                input.value = "";
+                input.focus();
 
-            loadResults(
-                createSearchUrl()
-            );
-        }
-    );
+                loadResults(
+                    createSearchUrl()
+                );
+            }
+        );
 
-    /*
-     * Reset search saja.
-     * Company yang dipilih tetap dipertahankan.
-     */
-    resetButton?.addEventListener(
-        "click",
-        (event) => {
-            event.preventDefault();
+        /*
+         * ============================================================
+         * 8. EVENT CHECKBOX FILTER
+         * ============================================================
+         *
+         * Menggunakan event delegation.
+         *
+         * Ini penting karena department checkbox akan diganti
+         * melalui AJAX.
+         */
+        filtersRoot?.addEventListener(
+            "change",
+            (event) => {
+                if (
+                    !(
+                        event.target instanceof
+                        Element
+                    )
+                ) {
+                    return;
+                }
 
-            input.value = "";
-            input.focus();
-
-            loadResults(
-                createSearchUrl()
-            );
-        }
-    );
-
-    /*
-     * Jalankan filter ketika checkbox berubah.
-     */
-    companyCheckboxes.forEach(
-        (checkbox) => {
-            checkbox.addEventListener(
-                "change",
-                () => {
-                    window.clearTimeout(
-                        debounceTimer
+                const checkbox =
+                    event.target.closest(
+                        [
+                            checkboxSelectors.company,
+                            checkboxSelectors
+                                .businessUnit,
+                            checkboxSelectors
+                                .department,
+                        ].join(",")
                     );
 
-                    updateCompanyFilterLabel();
-
-                    loadResults(
-                        createSearchUrl()
-                    );
+                if (!checkbox) {
+                    return;
                 }
-            );
-        }
-    );
 
-    /*
-     * Reset semua company.
-     * Keyword pencarian tetap dipertahankan.
-     */
-    companyFilterClear?.addEventListener(
-        "click",
-        () => {
-            companyCheckboxes.forEach(
-                (checkbox) => {
-                    checkbox.checked = false;
-                }
-            );
-
-            updateCompanyFilterLabel();
-
-            loadResults(
-                createSearchUrl()
-            );
-        }
-    );
-
-    /*
-     * Pagination dijalankan melalui AJAX.
-     */
-    results.addEventListener(
-        "click",
-        (event) => {
-            const link =
-                event.target.closest(
-                    "a[href]"
+                window.clearTimeout(
+                    debounceTimer
                 );
 
-            if (
-                !link ||
-                !results.contains(link)
-            ) {
-                return;
+                updateAllFilterLabels();
+
+                loadResults(
+                    createSearchUrl()
+                );
             }
+        );
 
-            const url = new URL(
-                link.href
-            );
+        /*
+         * ============================================================
+         * 9. RESET FILTER
+         * ============================================================
+         */
+        const resetSelectorMap = {
+            company:
+                checkboxSelectors.company,
 
-            if (
-                url.origin !==
-                window.location.origin
-            ) {
-                return;
+            "business-unit":
+                checkboxSelectors.businessUnit,
+
+            department:
+                checkboxSelectors.department,
+        };
+
+        filtersRoot?.addEventListener(
+            "click",
+            (event) => {
+                if (
+                    !(
+                        event.target instanceof
+                        Element
+                    )
+                ) {
+                    return;
+                }
+
+                const resetButton =
+                    event.target.closest(
+                        "[data-filter-clear]"
+                    );
+
+                if (!resetButton) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                const filterName =
+                    resetButton.dataset
+                        .filterClear;
+
+                const checkboxSelector =
+                    resetSelectorMap[
+                        filterName
+                    ];
+
+                if (!checkboxSelector) {
+                    return;
+                }
+
+                /*
+                 * Lepaskan centang pada filter terkait.
+                 */
+                getCheckboxes(
+                    checkboxSelector
+                ).forEach((checkbox) => {
+                    checkbox.checked = false;
+                });
+
+                updateAllFilterLabels();
+
+                /*
+                 * Jika business unit di-reset:
+                 * - Department yang sedang dipilih tetap dikirim.
+                 * - Controller akan menampilkan semua department.
+                 *
+                 * Hal ini memungkinkan filter hanya berdasarkan
+                 * department tanpa business unit.
+                 */
+                loadResults(
+                    createSearchUrl()
+                );
             }
+        );
 
-            event.preventDefault();
+        /*
+         * ============================================================
+         * 10. PAGINATION AJAX
+         * ============================================================
+         */
+        results.addEventListener(
+            "click",
+            (event) => {
+                if (
+                    !(
+                        event.target instanceof
+                        Element
+                    )
+                ) {
+                    return;
+                }
 
-            loadResults(url);
+                const link =
+                    event.target.closest(
+                        "a[href]"
+                    );
 
-            results.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-            });
-        }
-    );
+                if (
+                    !link ||
+                    !results.contains(link)
+                ) {
+                    return;
+                }
 
-    /*
-     * Mendukung browser back/forward.
-     */
-    window.addEventListener(
-        "popstate",
-        () => {
-            const url = new URL(
-                window.location.href
-            );
+                const url = new URL(
+                    link.href
+                );
 
-            input.value =
-                url.searchParams.get(
-                    "search"
-                ) ?? "";
+                /*
+                 * Hanya intercept link internal.
+                 */
+                if (
+                    url.origin !==
+                    window.location.origin
+                ) {
+                    return;
+                }
 
-            syncFilterFromUrl(url);
+                event.preventDefault();
 
-            loadResults(url, {
-                updateHistory: false,
-            });
-        }
-    );
+                loadResults(url);
 
-    /*
-     * Menampilkan jumlah filter saat halaman
-     * pertama kali dibuka.
-     */
-    updateCompanyFilterLabel();
-});
+                results.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                });
+            }
+        );
+
+        /*
+         * ============================================================
+         * 11. BROWSER BACK DAN FORWARD
+         * ============================================================
+         */
+        window.addEventListener(
+            "popstate",
+            () => {
+                const url = new URL(
+                    window.location.href
+                );
+
+                /*
+                 * Sinkronkan input search.
+                 */
+                input.value =
+                    url.searchParams.get(
+                        "search"
+                    ) ?? "";
+
+                /*
+                 * Sinkronkan checkbox yang saat ini tersedia.
+                 *
+                 * Department dropdown akan dirender ulang oleh
+                 * response AJAX setelah request selesai.
+                 */
+                syncCheckboxesFromUrl(
+                    checkboxSelectors.company,
+                    "company[]",
+                    url
+                );
+
+                syncCheckboxesFromUrl(
+                    checkboxSelectors.businessUnit,
+                    "business_unit[]",
+                    url
+                );
+
+                syncCheckboxesFromUrl(
+                    checkboxSelectors.department,
+                    "department[]",
+                    url
+                );
+
+                updateAllFilterLabels();
+
+                loadResults(url, {
+                    updateHistory: false,
+                });
+            }
+        );
+
+        /*
+         * ============================================================
+         * 12. INITIAL STATE
+         * ============================================================
+         */
+        updateAllFilterLabels();
+
+        resetSearchButton?.classList.toggle(
+            "hidden",
+            input.value.trim() === ""
+        );
+    }
+);

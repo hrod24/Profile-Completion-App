@@ -59,10 +59,11 @@
 
 
         <main class="mx-auto max-w-[1500px] px-4 py-8 sm:px-6 lg:px-8">
-            <x-dashboard.company-filter :companies="$companies" :selected-companies="$selectedCompanies" />
+            <x-dashboard.company-filter :companies="$companies" :business-units="$businessUnits" :departments="$departments" :selected-companies="$selectedCompanies"
+                :selected-business-units="$selectedBusinessUnits" :selected-departments="$selectedDepartments" />
             <div data-dashboard-statistics>
                 @include('components.dashboard.statistics')
-            </div>  
+            </div>
             <x-dashboard.table :employees="$employees" />
         </main>
 

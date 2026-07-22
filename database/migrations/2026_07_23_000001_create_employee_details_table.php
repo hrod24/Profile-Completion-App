@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('shift_group_code', 50);
             $table->string('business_unit_org_element_1', 100)->nullable();
             $table->string('department_org_element_2', 100)->nullable();
+            $table->string('pic_nip',100)->nullable();
             $table->string('emergency_full_name', 255)->nullable();
             $table->text('current_address');
             $table->string('mother_full_name', 255)->nullable();
@@ -76,6 +77,7 @@ return new class extends Migration
             $table->timestamps();
             $table->foreign('business_unit_org_element_1')->references('business_unit_code')->on('business_units')->onDelete('cascade');
             $table->foreign('department_org_element_2')->references('department_code')->on('departments')->onDelete('cascade');
+            $table->foreign('pic_nip')->references('nip')->on('pics')->onDelete('cascade');
         });
     }
 

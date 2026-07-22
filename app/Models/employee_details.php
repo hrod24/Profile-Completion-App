@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 
 class employee_details extends Model
@@ -17,6 +18,24 @@ class employee_details extends Model
         'date_of_birth' => 'date',
         'employee_completed_at' => 'datetime',
     ];
+
+    public function businessUnit(): BelongsTo
+    {
+        return $this->belongsTo(
+            BusinessUnit::class,
+            'business_unit_org_element_1',
+            'business_unit_code'
+        );
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(
+            Department::class,
+            'department_org_element_2',
+            'department_code'
+        );
+    }
 
     /**
      * Employee yang masih memiliki kolom wajib HR kosong.
