@@ -14,6 +14,8 @@ class employee_details extends Model
 
     protected $guarded = ['id'];
 
+    protected $with = ['department', 'pic', 'businessUnit'];
+
     protected $casts = [
         'date_of_birth' => 'date',
         'employee_completed_at' => 'datetime',
@@ -25,6 +27,15 @@ class employee_details extends Model
             BusinessUnit::class,
             'business_unit_org_element_1',
             'business_unit_code'
+        );
+    }
+
+    public function pic(): BelongsTo
+    {
+        return $this->belongsTo(
+            Pic::class,
+            'pic_nip',
+            'nip'
         );
     }
 

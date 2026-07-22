@@ -1,6 +1,7 @@
 import "./bootstrap";
 import "./dashboard-live-search";
 import "flowbite";
+import './set-pic';
 
 document.addEventListener("DOMContentLoaded", () => {
     initEmployeeForm();

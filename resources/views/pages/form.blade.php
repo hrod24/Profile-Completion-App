@@ -38,8 +38,14 @@
                 <div class="relative max-w-3xl">
                     <p class="text-xs font-bold uppercase tracking-[0.17em] text-white/80">Employee data completion form
                     </p>
-                    <h1 class="mt-2 text-2xl font-extrabold sm:text-3xl">Complete Your Employee Profile
+                    <h1 class="mt-2 text-2xl font-extrabold sm:text-3xl">
+                        Complete Your Employee Profile
+                    </h1>
 
+                    <p class="mt-3 max-w-2xl text-sm leading-6 text-white/85">
+                        Please complete each section carefully. Your information
+                        will be used for employee administration.
+                    </p>
                 </div>
             </section>
 

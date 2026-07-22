@@ -49,8 +49,12 @@
 
     <div class="min-w-0">
         <div class="mb-3 flex items-center justify-between px-1 text-xs font-semibold text-slate-500 lg:hidden">
-            <span data-current-step>Step 1 of 5 </span>
-            <span>Fields marked <span class="text-kanmo-600">*</span> are required<span class="text-kanmo-600">
+            <span data-current-step>Step 1 of 6</span>
+            <span>
+                Fields marked
+                <span class="text-kanmo-600">*</span>
+                are required
+            </span>
         </div>
 
         {{-- STEP 1: IDENTITY --}}
@@ -858,9 +862,7 @@
 
         <div
             class="sticky bottom-0 z-20 mt-5 rounded-2xl border border-stone-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(28,25,23,0.08)] backdrop-blur sm:p-4">
-            <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <a href="{{ url()->previous() }}" class="kanmo-btn-ghost cursor-pointer">Cancel</a>
-
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
                 <div class="flex flex-col gap-2 sm:flex-row">
                     <button type="button" class="kanmo-btn-secondary hidden" data-previous-step>
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
