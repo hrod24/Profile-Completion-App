@@ -85,62 +85,136 @@ class EmployeeDetailsSheetImport implements
     ];
 
     private int $inserted = 0;
+    private string $batchId;
 
+    /**
+     * Set digunakan untuk mendeteksi Employee ID duplikat
+     * dan menghitung jumlah employee dalam file terbaru.
+     *
+     * @var array<string, true>
+     */
+    private array $importedEmployeeIds = [];
+    private int $deactivated = 0;
     private int $updated = 0;
 
     private int $skipped = 0;
 
+    public function __construct(string $batchId)
+    {
+        $this->batchId = $batchId;
+    }
+
+    public function finalizeStatuses(): void
+    {
+        if ($this->importedEmployeeIds === []) {
+            throw new \RuntimeException(
+                'Import dibatalkan karena tidak ada Employee ID valid dalam file Excel.'
+            );
+        }
+
+        /*
+     * update() mengembalikan jumlah baris yang benar-benar berubah.
+     */
+        $this->deactivated = employee_details::query()
+            ->where('active', true)
+            ->where(function ($query): void {
+                $query
+                    ->whereNull('last_seen_import_batch')
+                    ->orWhere(
+                        'last_seen_import_batch',
+                        '!=',
+                        $this->batchId
+                    );
+            })
+            ->update([
+                'active' => 0,
+                'inactive_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+        Log::info('Finalisasi status employee selesai.', [
+            'batch_id' => $this->batchId,
+            'deactivated_rows' => $this->deactivated,
+            'database' => DB::connection()->getDatabaseName(),
+        ]);
+    }
+
     public function collection(Collection $rows): void
     {
-        DB::transaction(function () use ($rows): void {
-            foreach ($rows as $index => $row) {
-                $employeeId = $this->normalizeEmployeeId(
-                    $row->get('employee_id')
+        /*
+     * Tidak perlu DB::transaction() lagi di sini.
+     * Transaksi utama berada di controller agar import dan
+     * perubahan status active/inactive berada dalam satu transaksi.
+     */
+        foreach ($rows as $index => $row) {
+            $employeeId = $this->normalizeEmployeeId(
+                $row->get('employee_id')
+            );
+
+            if ($employeeId === null) {
+                $this->skipped++;
+
+                Log::warning(
+                    'Baris import dilewati karena Employee ID kosong.',
+                    [
+                        'excel_row' => $index + 2,
+                    ]
                 );
 
-                if ($employeeId === null) {
-                    $this->skipped++;
+                continue;
+            }
 
-                    Log::warning('Baris import dilewati karena Employee ID kosong.', [
-                        'excel_row' => $index + 2,
-                    ]);
+            /*
+         * Satu Employee ID tidak boleh muncul dua kali dalam file.
+         */
+            if (isset($this->importedEmployeeIds[$employeeId])) {
+                throw new \RuntimeException(
+                    "Employee ID {$employeeId} muncul lebih dari satu kali dalam file Excel."
+                );
+            }
 
-                    continue;
-                }
+            $this->importedEmployeeIds[$employeeId] = true;
 
-                $employee = employee_details::query()
-                    ->where('employee_id', $employeeId)
-                    ->first();
+            $employee = employee_details::query()
+                ->where('employee_id', $employeeId)
+                ->first();
 
-                $data = $this->buildImportData($row);
+            $data = $this->buildImportData($row);
+
+            $data['employee_id'] = $employeeId;
+
+            /*
+         * Setiap employee yang ditemukan di snapshot terbaru
+         * selalu dianggap aktif.
+         */
+            $data['active'] = 1;
+            $data['last_seen_import_batch'] = $this->batchId;
+            $data['inactive_at'] = null;
+
+            if ($employee) {
+                $updateData = $this->prepareUpdateData($data);
+
+                unset($updateData['employee_id']);
 
                 /*
-                 * Employee ID selalu menjadi identitas utama.
-                 */
-                $data['employee_id'] = $employeeId;
+             * Field status harus selalu diperbarui meskipun
+             * importer mempertahankan nilai lama ketika Excel kosong.
+             */
+                $updateData['active'] = 1;
+                $updateData['last_seen_import_batch'] = $this->batchId;
+                $updateData['inactive_at'] = null;
 
-                if ($employee) {
-                    $updateData = $this->prepareUpdateData($data);
+                $employee->update($updateData);
 
-                    /*
-                     * Employee ID tidak perlu diubah saat update.
-                     */
-                    unset($updateData['employee_id']);
+                $this->updated++;
 
-                    if ($updateData !== []) {
-                        $employee->update($updateData);
-                    }
-
-                    $this->updated++;
-
-                    continue;
-                }
-
-                employee_details::query()->create($data);
-
-                $this->inserted++;
+                continue;
             }
-        });
+
+            employee_details::query()->create($data);
+
+            $this->inserted++;
+        }
     }
 
     /**
@@ -271,5 +345,15 @@ class EmployeeDetailsSheetImport implements
     public function getSkipped(): int
     {
         return $this->skipped;
+    }
+
+    public function getDeactivated(): int
+    {
+        return $this->deactivated;
+    }
+
+    public function getImportedEmployeeCount(): int
+    {
+        return count($this->importedEmployeeIds);
     }
 }

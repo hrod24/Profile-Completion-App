@@ -1,8 +1,6 @@
 <x-layout :title="$title">
-    <x-app-shell
-        title="Upload Employee Excel"
-        subtitle="Insert new employee records and update existing records using Employee ID as the unique reference."
-    >
+    <x-app-shell title="Upload Employee Excel"
+        subtitle="Insert new employee records and update existing records using Employee ID as the unique reference.">
         <x-slot:actions>
             <a href="{{ route('dashboard') }}" class="kanmo-btn-secondary">Back to Dashboard</a>
         </x-slot:actions>
@@ -34,25 +32,36 @@
             @endif
 
             <section class="minimal-card overflow-hidden">
-                <div class="border-b border-slate-200 px-6 py-5">
-                    <h2 class="text-base font-bold text-slate-900">Select Excel File</h2>
-                    <p class="mt-1 text-sm leading-6 text-slate-500">The system reads Employee Details, Employee ID, and columns marked as Mandatory.</p>
+
+                <div class="border-b flex justify-between border-slate-200 px-6 py-5">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Select Excel File</h2>
+                        <p class="mt-1 text-sm leading-6 text-slate-500">The system reads Employee Details, Employee ID,
+                            and columns marked as Mandatory.</p>
+                    </div>
+
+                    <button type="button" id="synchronize-account-button"
+                        data-start-url="{{ route('employee.accounts.synchronize.start') }}"
+                        data-chunk-url="{{ route('employee.accounts.synchronize.chunk') }}" class="kanmo-btn-primary">
+                        Synchronize Employee Accounts
+                    </button>
+
+                    <div id="synchronize-account-status" class="mt-3 hidden text-sm text-slate-600"></div>
                 </div>
 
-                <form action="{{ route('employee.import.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6 p-6">
+                <form id="employee-excel-import-form" action="{{ route('employee.import.start') }}" method="POST"
+                    enctype="multipart/form-data" class="space-y-6 p-6"
+                    data-start-url="{{ route('employee.import.start') }}"
+                    data-chunk-url="{{ route('employee.import.chunk') }}"
+                    data-finish-url="{{ route('employee.import.finish') }}">
                     @csrf
 
                     <div>
                         <label for="excel_file" class="kanmo-label">Employee File</label>
-                        <input
-                            type="file"
-                            id="excel_file"
-                            name="excel_file"
-                            accept=".xlsx,.xls"
-                            required
-                            class="block w-full cursor-pointer rounded-xl border border-slate-300 bg-slate-50 text-sm text-slate-700 file:mr-4 file:border-0 file:bg-kanmo-500 file:px-5 file:py-3 file:font-bold file:text-white hover:file:bg-kanmo-600 focus:outline-none focus:ring-4 focus:ring-kanmo-100"
-                        >
-                        <p class="kanmo-help">XLSX/XLS format, maximum 20 MB. Keep the sheet, Mandatory row, and header positions unchanged.</p>
+                        <input type="file" id="excel_file" name="excel_file" accept=".xlsx,.xls" required
+                            class="block w-full cursor-pointer rounded-xl border border-slate-300 bg-slate-50 text-sm text-slate-700 file:mr-4 file:border-0 file:bg-kanmo-500 file:px-5 file:py-3 file:font-bold file:text-white hover:file:bg-kanmo-600 focus:outline-none focus:ring-4 focus:ring-kanmo-100">
+                        <p class="kanmo-help">XLSX/XLS format, maximum 20 MB. Keep the sheet, Mandatory row, and header
+                            positions unchanged.</p>
                     </div>
 
                     <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
@@ -65,8 +74,21 @@
                         </ul>
                     </div>
 
-                    <div class="flex justify-end">
-                        <button type="submit" class="kanmo-btn-primary">Upload and Import</button>
+                    <div class="flex items-center justify-end gap-4">
+                        <div id="employee-import-progress"
+                            class="hidden rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <p class="text-sm font-bold text-slate-900">
+                                Importing Employee Data
+                            </p>
+
+                            <p id="employee-import-progress-text" class="mt-1 text-sm text-slate-600">
+                                Preparing import...
+                            </p>
+                        </div>
+
+                        <button type="submit" class="kanmo-btn-primary" data-import-submit>
+                            Upload and Import
+                        </button>
                     </div>
                 </form>
             </section>

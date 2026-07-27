@@ -18,7 +18,12 @@ class employee_details extends Model
 
     protected $casts = [
         'date_of_birth' => 'date',
+        'date_of_join' => 'date',
+        'education_from' => 'date',
+        'education_end' => 'date',
         'employee_completed_at' => 'datetime',
+        'active' => 'boolean',
+        'inactive_at' => 'datetime',
     ];
 
     public function businessUnit(): BelongsTo
@@ -46,6 +51,16 @@ class employee_details extends Model
             'department_org_element_2',
             'department_code'
         );
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('active', 1);
+    }
+
+    public function scopeInactive(Builder $query): Builder
+    {
+        return $query->where('active', 0);
     }
 
     /**

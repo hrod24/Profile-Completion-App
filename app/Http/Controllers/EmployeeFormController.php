@@ -16,55 +16,38 @@ class EmployeeFormController extends Controller
      */
     public function show(Request $request)
     {
-        $user = null;
-
-        
-
-        if ($request->filled('employee_id')) {
-            $request->validate([
-                'employee_id' => [
-                    'required',
-                    'string',
-                    'max:20',
-                ],
-            ]);
-
-            $user = employee_details::where(
-                'employee_id',
-                $request->employee_id
-            )->first();
-
-            if (!$user) {
-                return redirect()
-                    ->route('employee.form')
-                    ->with('error', 'Employee ID tidak ditemukan.');
-            }
-        }
+        $user = $this->authenticatedEmployee($request);
 
         $existingDocuments = [
-            'ijazah_filename' => filled($user?->ijazah_filename)
-                && Storage::disk('public')->exists($user->ijazah_filename),
+            'ijazah_filename' =>
+            filled($user->ijazah_filename)
+                && Storage::disk('public')->exists(
+                    $user->ijazah_filename
+                ),
 
-            'ktp_filename' => filled($user?->ktp_filename)
-                && Storage::disk('public')->exists($user->ktp_filename),
+            'ktp_filename' =>
+            filled($user->ktp_filename)
+                && Storage::disk('public')->exists(
+                    $user->ktp_filename
+                ),
 
-            'kk_filename' => filled($user?->kk_filename)
-                && Storage::disk('public')->exists($user->kk_filename),
+            'kk_filename' =>
+            filled($user->kk_filename)
+                && Storage::disk('public')->exists(
+                    $user->kk_filename
+                ),
 
-            'npwp_filename' => filled($user?->npwp_filename)
-                && Storage::disk('public')->exists($user->npwp_filename),
+            'npwp_filename' =>
+            filled($user->npwp_filename)
+                && Storage::disk('public')->exists(
+                    $user->npwp_filename
+                ),
         ];
-
 
         return view('pages.form', [
             'title' => 'Employee Form',
             'user' => $user,
             'existingDocuments' => $existingDocuments,
-
-            /*
-             * Dikirim ke Blade agar atribut required pada form
-             * mengikuti config/employee.php.
-             */
             'employeeRequiredFields' => config(
                 'employee.employee_required_fields',
                 []
@@ -77,13 +60,29 @@ class EmployeeFormController extends Controller
      */
     public function submit(Request $request)
     {
+        /*
+     * Employee selalu diambil dari akun yang login.
+     */
+        $employee = $this->authenticatedEmployee($request);
+
+        /*
+     * Jangan percaya employee_id dari browser.
+     */
+        $request->merge([
+            'employee_id' => $employee->employee_id,
+            'ktp_postal_code' =>
+            $request->input('current_postal_code'),
+        ]);
+
         $employeeRequiredFields = config(
             'employee.employee_required_fields',
             []
         );
 
         $emptyValues = array_map(
-            fn($value) => strtoupper(trim((string) $value)),
+            fn($value) => strtoupper(
+                trim((string) $value)
+            ),
             config('employee.empty_values', [])
         );
 
@@ -91,40 +90,23 @@ class EmployeeFormController extends Controller
             string $attribute,
             mixed $value,
             \Closure $fail
-        ) use ($emptyValues) {
-            $normalizedValue = strtoupper(trim((string) $value));
+        ) use ($emptyValues): void {
+            $normalizedValue = strtoupper(
+                trim((string) $value)
+            );
 
-            if (in_array($normalizedValue, $emptyValues, true)) {
-                $fail("Field {$attribute} harus diisi dengan data yang valid.");
+            if (
+                in_array(
+                    $normalizedValue,
+                    $emptyValues,
+                    true
+                )
+            ) {
+                $fail(
+                    "Field {$attribute} harus diisi dengan data yang valid."
+                );
             }
         };
-
-        /*
-     * Validasi employee_id dulu agar kita bisa ambil data employee.
-     */
-        $request->validate([
-            'employee_id' => [
-                'required',
-                'string',
-                'max:20',
-                'exists:employee_details,employee_id',
-            ],
-        ], [
-            'employee_id.exists' => 'Employee ID tidak ditemukan.',
-        ]);
-
-        $employee = employee_details::where(
-            'employee_id',
-            $request->employee_id
-        )->firstOrFail();
-
-        /*
-     * ktp_postal_code tidak ada input di form.
-     * Nilainya disamakan otomatis dengan current_postal_code.
-     */
-        $request->merge([
-            'ktp_postal_code' => $request->input('current_postal_code'),
-        ]);
 
         $fileFields = [
             'ktp_filename',
@@ -133,6 +115,18 @@ class EmployeeFormController extends Controller
             'npwp_filename',
         ];
 
+        $documentIsMissing = function (
+            string $field
+        ) use ($employee): bool {
+            $path = $employee->{$field};
+
+            return blank($path)
+                || !Storage::disk('public')->exists($path);
+        };
+
+        /*
+     * Gunakan seluruh rules milikmu.
+     */
         $rules = [
             'employee_id' => [
                 'required',
@@ -141,126 +135,39 @@ class EmployeeFormController extends Controller
                 'exists:employee_details,employee_id',
             ],
 
-            'emergency_full_name' => ['string', 'max:255'],
-            'current_address' => ['string', 'max:2000'],
-            'mother_full_name' => ['string', 'max:255'],
-
-            'education_level' => [
-                Rule::in(['SMA', 'SMK', 'D1', 'D2', 'D3', 'D4', 'S1', 'S2', 'S3']),
-            ],
-
-            'education_from' => [
-                'integer',
-                'min:1800',
-                'max:2100',
-            ],
-
-            'education_end' => [
-                'integer',
-                'min:1800',
-                'max:2100',
-                'gte:education_from',
-            ],
-
-            'primary_contact_number' => [
-                'string',
-                'max:30',
-                'regex:/^[0-9+\-\s()]+$/',
-            ],
-
-            'tax_number' => ['string', 'max:30'],
-
-            'emergency_contact_no' => [
-                'string',
-                'max:30',
-                'regex:/^[0-9+\-\s()]+$/',
-            ],
-
-            'current_provinsi' => ['string', 'max:255'],
-            'current_kotamadya_kabupaten' => ['string', 'max:255'],
-            'current_kecamatan' => ['string', 'max:255'],
-            'current_kelurahan' => ['string', 'max:255'],
-            'current_postal_code' => ['string', 'max:50'],
-
-            'ktp_address' => ['string', 'max:2000'],
-            'ktp_provinsi' => ['string', 'max:255'],
-            'ktp_kotamadya_kabupaten' => ['string', 'max:255'],
-            'ktp_kecamatan' => ['string', 'max:255'],
-            'ktp_kelurahan' => ['string', 'max:255'],
-
-            /*
-         * Tidak ada input di Blade.
-         * Diisi otomatis dari current_postal_code.
-         */
-            'ktp_postal_code' => ['string', 'max:50'],
-
-            'primary_email' => ['email', 'max:191'],
-            'display_name' => ['string', 'max:255'],
-            'major' => ['string', 'max:255'],
-            'institution_name' => ['string', 'max:150'],
-
-            'religion' => [
-                Rule::in([
-                    'Islam',
-                    'Hinduism',
-                    'Christianity',
-                    'Buddhism',
-                    'Catholicism',
-                    'Sikhism',
-                    'Other',
-                ]),
-            ],
-
-            'birth_place' => ['string', 'max:255'],
-
-            'date_of_birth' => [
-                'date',
-                'before_or_equal:today',
-            ],
-
-            'marital_status' => [
-                Rule::in(['Single', 'Married', 'Divorced', 'Widowed']),
-            ],
-
-            'gender' => [
-                Rule::in(['Male', 'Female']),
-            ],
-
-            'blood_group' => [
-                Rule::in(['A+', 'B+', 'AB+', 'O+', 'A-', 'AB-', 'B-', 'O-']),
-            ],
-
-            'ktp_number' => [
-                'string',
-                'max:25',
-                'regex:/^[0-9]+$/',
-            ],
-
-            'nationality' => ['string', 'max:50'],
+            // Semua rules field text milikmu...
 
             'ktp_filename' => [
-                Rule::requiredIf(fn() => empty($employee->ktp_filename)),
+                Rule::requiredIf(
+                    fn() => $documentIsMissing('ktp_filename')
+                ),
                 'file',
                 'mimes:pdf,jpg,jpeg,png',
                 'max:5120',
             ],
 
             'kk_filename' => [
-                Rule::requiredIf(fn() => empty($employee->kk_filename)),
+                Rule::requiredIf(
+                    fn() => $documentIsMissing('kk_filename')
+                ),
                 'file',
                 'mimes:pdf,jpg,jpeg,png',
                 'max:5120',
             ],
 
             'ijazah_filename' => [
-                Rule::requiredIf(fn() => empty($employee->ijazah_filename)),
+                Rule::requiredIf(
+                    fn() => $documentIsMissing('ijazah_filename')
+                ),
                 'file',
                 'mimes:pdf,jpg,jpeg,png',
                 'max:5120',
             ],
 
             'npwp_filename' => [
-                Rule::requiredIf(fn() => empty($employee->npwp_filename)),
+                Rule::requiredIf(
+                    fn() => $documentIsMissing('npwp_filename')
+                ),
                 'file',
                 'mimes:pdf,jpg,jpeg,png',
                 'max:5120',
@@ -272,10 +179,10 @@ class EmployeeFormController extends Controller
             array_keys($rules)
         );
 
-        if (!empty($unknownFields)) {
+        if ($unknownFields !== []) {
             throw new \RuntimeException(
-                'Validation belum tersedia untuk field: ' .
-                    implode(', ', $unknownFields)
+                'Validation belum tersedia untuk field: '
+                    . implode(', ', $unknownFields)
             );
         }
 
@@ -284,7 +191,11 @@ class EmployeeFormController extends Controller
                 continue;
             }
 
-            array_unshift($rules[$field], 'required');
+            array_unshift(
+                $rules[$field],
+                'required'
+            );
+
             $rules[$field][] = $notPlaceholder;
         }
 
@@ -317,29 +228,23 @@ class EmployeeFormController extends Controller
 
                 'npwp_filename.required' =>
                 'File NPWP wajib diupload.',
-
-                '*.mimes' =>
-                'File harus berupa PDF, JPG, JPEG, atau PNG.',
-
-                '*.max' =>
-                'Ukuran file maksimal 5MB.',
             ]
         );
 
         /*
-     * Ambil data text/input biasa saja.
-     * File tidak boleh langsung masuk fill(), karena isinya UploadedFile object.
+     * Simpan seluruh field text yang tervalidasi,
+     * termasuk field opsional yang diisi employee.
      */
-        $employeeData = Arr::only(
+        $employeeData = Arr::except(
             $validated,
-            array_diff($employeeRequiredFields, $fileFields)
+            array_merge(
+                $fileFields,
+                ['employee_id']
+            )
         );
 
         $employee->fill($employeeData);
 
-        /*
-     * Simpan file jika employee upload file baru.
-     */
         $fileFieldMap = [
             'ktp_filename' => [
                 'prefix' => 'ktp',
@@ -372,40 +277,49 @@ class EmployeeFormController extends Controller
 
             $file = $request->file($field);
 
-            $extension = strtolower($file->getClientOriginalExtension());
+            $extension = strtolower(
+                $file->getClientOriginalExtension()
+            );
 
-            $fileName = $config['prefix'] . '_' . $safeEmployeeId . '.' . $extension;
+            $fileName =
+                $config['prefix']
+                . '_'
+                . $safeEmployeeId
+                . '.'
+                . $extension;
 
-            $directory = 'employee-documents/' . $config['folder'];
+            $directory =
+                'employee-documents/'
+                . $config['folder'];
+
+            $oldPath = $employee->{$field};
 
             /*
-     * Hapus file lama jika ada dan berbeda.
-     */
-            if (!empty($employee->{$field}) && Storage::disk('public')->exists($employee->{$field})) {
-                Storage::disk('public')->delete($employee->{$field});
-            }
-
-            /*
-     * Simpan file dengan nama custom.
-     * Contoh hasil:
-     * employee-documents/ktp/ktp_6949.pdf
-     */
-            $path = $file->storeAs(
+         * Simpan file baru lebih dahulu.
+         */
+            $newPath = $file->storeAs(
                 $directory,
                 $fileName,
                 'public'
             );
- 
+
+            $employee->{$field} = $newPath;
+
             /*
-     * Yang disimpan ke database adalah path file.
+         * Hapus file lama jika nama/path-nya berbeda.
+         */
+            if (
+                filled($oldPath)
+                && $oldPath !== $newPath
+                && Storage::disk('public')->exists($oldPath)
+            ) {
+                Storage::disk('public')->delete($oldPath);
+            }
+        }
+
+        /*
+     * Simpan data terlebih dahulu tanpa langsung menandai complete.
      */
-            $employee->{$field} = $path;
-        }
-
-        if (is_null($employee->employee_completed_at)) {
-            $employee->employee_completed_at = now();
-        }
-
         $employee->save();
         $employee->refresh();
 
@@ -415,20 +329,47 @@ class EmployeeFormController extends Controller
             ->exists();
 
         if (!$recognizedAsComplete) {
+            if (!is_null($employee->employee_completed_at)) {
+                $employee->update([
+                    'employee_completed_at' => null,
+                ]);
+            }
+
             return redirect()
-                ->route('employee.form', [
-                    'employee_id' => $employee->employee_id,
-                ])
+                ->route('employee.form')
                 ->with(
                     'error',
                     'Data tersimpan, tetapi masih ada field employee yang belum dianggap lengkap.'
                 );
         }
 
-        return redirect('form')
+        if (is_null($employee->employee_completed_at)) {
+            $employee->update([
+                'employee_completed_at' => now(),
+            ]);
+        }
+
+        return redirect()
+            ->route('employee.form')
             ->with(
                 'success',
                 'Data employee berhasil dilengkapi.'
             );
+    }
+
+    private function authenticatedEmployee(
+        Request $request
+    ): employee_details {
+        $employeeId = $request->user()->employee_id;
+
+        abort_if(
+            blank($employeeId),
+            403,
+            'Akun tidak terhubung dengan data employee.'
+        );
+
+        return employee_details::query()
+            ->where('employee_id', $employeeId)
+            ->firstOrFail();
     }
 }

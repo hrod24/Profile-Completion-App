@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BusinessUnit;
+use App\Models\Pic;
 use App\Models\Department;
 use App\Models\employee_details;
 use Illuminate\Http\Request;
@@ -72,6 +73,8 @@ class DashboardController extends Controller
                     []
                 )
             );
+
+        $selectedPics = $normalizeArrayParameter($request->query('pic', []));
 
         /*
          * Department dari request belum tentu masih valid.
@@ -284,6 +287,23 @@ class DashboardController extends Controller
             $filterQuery->whereIn(
                 'department_org_element_2',
                 $selectedDepartments->all()
+            );
+        }
+
+        /*
+        * ============================================================
+        * FILTER PIC
+        * ============================================================
+        *
+        * Checkbox PIC mengirim NIP PIC.
+        *
+        * Contoh URL:
+        * ?pic[]=10001&pic[]=10002
+        */
+        if ($selectedPics->isNotEmpty()) {
+            $filterQuery->whereIn(
+                'pic_nip',
+                $selectedPics->all()
             );
         }
 
@@ -531,6 +551,8 @@ class DashboardController extends Controller
             )
             ->values();
 
+        
+
         /*
          * Periksa apakah ada employee tanpa company.
          */
@@ -598,6 +620,14 @@ class DashboardController extends Controller
 
         /*
          * ============================================================
+         * 13. AMBIL DAFTAR PIC
+         * ============================================================
+         */
+
+        $allPic = Pic::orderBy('name')->get(['nip', 'name']);
+
+        /*
+         * ============================================================
          * 13. TAMPILKAN HALAMAN DASHBOARD
          * ============================================================
          */
@@ -618,6 +648,8 @@ class DashboardController extends Controller
             'departments' =>
             $departments,
 
+            'pics' => $allPic,
+
             'selectedCompanies' =>
             $selectedCompanies->all(),
 
@@ -626,6 +658,9 @@ class DashboardController extends Controller
 
             'selectedDepartments' =>
             $selectedDepartments->all(),
+            
+            'selectedPics' =>
+            $selectedPics->all(),
 
             'employees' =>
             $allEmployees,

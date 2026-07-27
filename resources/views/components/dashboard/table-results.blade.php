@@ -57,11 +57,12 @@
         <thead class="border-b border-stone-200 bg-stone-50/90">
             <tr>
                 <th class="w-16 px-4 py-2.5 text-center text-xs font-bold text-slate-500">No.</th>
-                <th class="min-w-[260px] px-4 py-2.5 text-xs font-bold text-slate-500">Employee</th>
-                <th class="min-w-[260px] px-4 py-2.5 text-xs font-bold text-slate-500">PIC</th>
-                <th class="min-w-[230px] px-4 py-2.5 text-xs font-bold text-slate-500">Data Employee</th>
-                <th class="min-w-[230px] px-4 py-2.5 text-xs font-bold text-slate-500">Data OD</th>
-                <th class="min-w-[275px] px-4 py-2.5 text-xs font-bold text-slate-500">Overall Completion</th>
+                <th class="min-w-[260px] px-4 py-2.5 text-center text-xs font-bold text-slate-500">Employee</th>
+                <th class="min-w-[260px] px-4 py-2.5 text-center text-xs font-bold text-slate-500">PIC</th>
+                <th class="min-w-[230px] px-4 py-2.5 text-center text-xs font-bold text-slate-500">Data Employee</th>
+                <th class="min-w-[230px] px-4 py-2.5 text-center text-xs font-bold text-slate-500">Data OD</th>
+                <th class="min-w-[275px] px-4 py-2.5 text-center text-xs font-bold text-slate-500">Overall Completion</th>
+                <th class="min-w-[275px] px-4 py-2.5 text-center text-xs font-bold text-slate-500">Employment Status</th>
             </tr>
         </thead>
 
@@ -117,11 +118,11 @@
                             </div>
                         </div>
                     </td>
-
+                    
                     @foreach ([[$employeeCompletion, $employeeMeta, $employee->profile_completion_filled, $employee->profile_completion_total, 'Kelengkapan data employee'], [$hrCompletion, $hrMeta, $employee->profile_od_completion_filled, $employee->profile_od_completion_total, 'Kelengkapan data OD']] as [$completion, $meta, $filled, $total, $ariaLabel])
-                        <td class="px-4 py-1">
-                            <div class="min-w-[205px]">
-                                <div class="mb-2 flex items-center justify-between gap-3">
+                    <td class="px-4 py-1">
+                        <div class="min-w-[205px]">
+                            <div class="mb-2 flex items-center justify-between gap-3">
                                     <span
                                         class="text-sm font-extrabold {{ $meta['text'] }}">{{ number_format($completion, 2, ',', '.') }}%</span>
                                     <span class="whitespace-nowrap text-xs text-slate-400">{{ $filled }} /
@@ -140,8 +141,8 @@
 
                     <td class="px-4 py-1">
                         <div
-                            class="min-w-[245px] rounded-xl border border-kanmo-100 bg-gradient-to-r from-kanmo-50/80 to-white p-3">
-                            <div class="flex items-center justify-between gap-3">
+                        class="min-w-[245px] rounded-xl border border-kanmo-100 bg-gradient-to-r from-kanmo-50/80 to-white p-3">
+                        <div class="flex items-center justify-between gap-3">
                                 <span
                                     class="text-lg font-extrabold {{ $overallMeta['text'] }}">{{ number_format($overallCompletion, 2, ',', '.') }}%</span>
                                 <span
@@ -151,7 +152,7 @@
                                 aria-label="Overall profile completion" aria-valuemin="0" aria-valuemax="100"
                                 aria-valuenow="{{ $overallCompletion }}">
                                 <div class="h-full rounded-full {{ $overallMeta['bar'] }}"
-                                    style="width: {{ $overallCompletion }}%"></div>
+                                style="width: {{ $overallCompletion }}%"></div>
                             </div>
                             <div class="mt-2.5 flex items-center justify-between text-xs text-slate-500">
                                 <span>Completion</span>
@@ -160,8 +161,26 @@
                             </div>
                         </div>
                     </td>
+
+                    <td class="px-4 py-1">
+                        <div class="flex items-center gap-3">
+                            @if ($employee->active == 1)
+                            <div
+                                class="flex py-2 px-4 w-fit mx-auto items-center justify-center rounded bg-emerald-100 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-emerald-300">
+                                Active
+                            </div>
+                            
+                            @else
+                            <div
+                                class="flex py-2 px-4 w-fit mx-auto items-center justify-center rounded bg-red-100 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-red-300">
+                                Blocked
+                            </div>
+                                
+                            @endif
+                        </div>
+                    </td>
                 </tr>
-            @empty
+                @empty
                 <tr>
                     <td colspan="5" class="px-6 py-16 text-center">
                         <div

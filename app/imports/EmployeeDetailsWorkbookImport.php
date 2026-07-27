@@ -2,6 +2,7 @@
 
 namespace App\Imports;
 
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
 class EmployeeDetailsWorkbookImport implements WithMultipleSheets
@@ -10,7 +11,9 @@ class EmployeeDetailsWorkbookImport implements WithMultipleSheets
 
     public function __construct()
     {
-        $this->sheetImport = new EmployeeDetailsSheetImport();
+        $this->sheetImport = new EmployeeDetailsSheetImport(
+            (string) Str::uuid()
+        );
     }
 
     public function sheets(): array
@@ -18,6 +21,14 @@ class EmployeeDetailsWorkbookImport implements WithMultipleSheets
         return [
             'Employee Details' => $this->sheetImport,
         ];
+    }
+
+    /**
+     * Harus dipanggil setelah seluruh baris Excel selesai diproses.
+     */
+    public function finalizeStatuses(): void
+    {
+        $this->sheetImport->finalizeStatuses();
     }
 
     public function getInserted(): int
@@ -35,15 +46,24 @@ class EmployeeDetailsWorkbookImport implements WithMultipleSheets
         return $this->sheetImport->getSkipped();
     }
 
-    /**
-     * Ringkasan hasil import.
-     */
+    public function getDeactivated(): int
+    {
+        return $this->sheetImport->getDeactivated();
+    }
+
+    public function getImportedEmployeeCount(): int
+    {
+        return $this->sheetImport->getImportedEmployeeCount();
+    }
+
     public function summary(): array
     {
         return [
             'inserted' => $this->getInserted(),
             'updated' => $this->getUpdated(),
             'skipped' => $this->getSkipped(),
+            'deactivated' => $this->getDeactivated(),
+            'active_in_file' => $this->getImportedEmployeeCount(),
         ];
     }
 }

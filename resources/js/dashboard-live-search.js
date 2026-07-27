@@ -81,6 +81,11 @@ document.addEventListener(
             document.querySelector(
                 "[data-department-filter-label]"
             );
+        
+        const picFilterLabel =
+            document.querySelector(
+                "[data-pic-filter-label]"
+            );
 
         if (!input || !results) {
             return;
@@ -117,6 +122,8 @@ document.addEventListener(
 
             department:
                 "[data-department-filter-checkbox]",
+            pic:
+                "[data-pic-filter-checkbox]",
         };
 
         /*
@@ -248,8 +255,7 @@ document.addEventListener(
                     businessUnitFilterLabel,
 
                 checkboxSelector:
-                    checkboxSelectors
-                        .businessUnit,
+                    checkboxSelectors.businessUnit,
 
                 defaultText:
                     "Filter Division",
@@ -264,6 +270,17 @@ document.addEventListener(
 
                 defaultText:
                     "Filter Department",
+            });
+
+            updateFilterLabel({
+                labelElement:
+                    picFilterLabel,
+
+                checkboxSelector:
+                    checkboxSelectors.pic,
+
+                defaultText:
+                    "Filter PIC",
             });
         };
 
@@ -312,6 +329,18 @@ document.addEventListener(
             ).forEach((value) => {
                 url.searchParams.append(
                     "business_unit[]",
+                    value
+                );
+            });
+
+            /*
+             * pic.
+             */
+            getCheckedValues(
+                checkboxSelectors.pic
+            ).forEach((value) => {
+                url.searchParams.append(
+                    "pic[]",
                     value
                 );
             });
@@ -617,10 +646,9 @@ document.addEventListener(
                     event.target.closest(
                         [
                             checkboxSelectors.company,
-                            checkboxSelectors
-                                .businessUnit,
-                            checkboxSelectors
-                                .department,
+                            checkboxSelectors.businessUnit,
+                            checkboxSelectors.department,
+                            checkboxSelectors.pic,
                         ].join(",")
                     );
 
@@ -654,6 +682,9 @@ document.addEventListener(
 
             department:
                 checkboxSelectors.department,
+
+            pic:
+                checkboxSelectors.pic,
         };
 
         filtersRoot?.addEventListener(
@@ -812,6 +843,12 @@ document.addEventListener(
                 syncCheckboxesFromUrl(
                     checkboxSelectors.department,
                     "department[]",
+                    url
+                );
+
+                syncCheckboxesFromUrl(
+                    checkboxSelectors.pic,
+                    "pic[]",
                     url
                 );
 

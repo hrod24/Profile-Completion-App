@@ -14,9 +14,11 @@
                 :companies="$companies"
                 :business-units="$businessUnits"
                 :departments="$departments"
+                :pics="$pics"
                 :selected-companies="$selectedCompanies"
                 :selected-business-units="$selectedBusinessUnits"
                 :selected-departments="$selectedDepartments"
+                :selected-pics="$selectedPics"
             />
         </section>
 

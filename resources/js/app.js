@@ -2,6 +2,15 @@ import "./bootstrap";
 import "./dashboard-live-search";
 import "flowbite";
 import './set-pic';
+import './sidebar-navigation';
+import "./employee-account-synchronize";
+import "./employee-excel-import";
+
+import Alpine from 'alpinejs';
+
+window.Alpine = Alpine;
+
+Alpine.start();
 
 document.addEventListener("DOMContentLoaded", () => {
     initEmployeeForm();

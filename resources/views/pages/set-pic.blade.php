@@ -5,7 +5,7 @@
     >
         <x-app-shell
             title="Set PIC Employee"
-            subtitle="Assign PIC HR/OD untuk satu atau beberapa employee secara batch."
+            subtitle="Assign PIC to one or more employees in batches."
         >
             {{-- Success alert --}}
             @if (session('success'))
@@ -57,8 +57,8 @@
                     </h2>
 
                     <p class="mt-1 text-xs text-slate-500">
-                        Search employee berdasarkan NIP atau nama,
-                        kemudian filter berdasarkan company.
+                        Search employee base on ID or name,
+                        and then u can filter it by company.
                     </p>
                 </div>
 
@@ -148,7 +148,7 @@
                                 </p>
 
                                 <p class="mt-1 text-xs text-slate-400">
-                                    Pilih satu atau beberapa company.
+                                    Select one or more company.
                                 </p>
                             </div>
 
@@ -206,7 +206,7 @@
                                 </label>
                             @empty
                                 <p class="text-sm text-slate-500">
-                                    Tidak ada company yang tersedia.
+                                    There is no company available
                                 </p>
                             @endforelse
                         </div>
@@ -230,7 +230,7 @@
                             <span id="employee-result-count">
                                 {{ number_format($employees->total(), 0, ',', '.') }}
                             </span>
-                            employee belum memiliki PIC.
+                            employee does not have a PIC yet
                         </p>
                     </div>
 
@@ -240,7 +240,7 @@
                                sm:flex-row lg:max-w-2xl"
                     >
                         <label for="pic-nip" class="sr-only">
-                            Pilih PIC
+                            Select PIC
                         </label>
 
                         <select

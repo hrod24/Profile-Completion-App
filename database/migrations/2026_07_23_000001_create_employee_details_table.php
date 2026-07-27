@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('business_unit_org_element_1', 100)->nullable();
             $table->string('department_org_element_2', 100)->nullable();
             $table->string('pic_nip',100)->nullable();
+            $table->tinyInteger('active')->default(1);
             $table->string('emergency_full_name', 255)->nullable();
             $table->text('current_address')->nullable();
             $table->string('mother_full_name', 255)->nullable();
