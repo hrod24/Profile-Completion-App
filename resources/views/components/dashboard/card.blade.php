@@ -41,7 +41,7 @@
                 </p>
 
                 <p class="mt-2 text-xs text-slate-500">
-                    Employee has completed profile data
+                    Employees who have completed their profile information
                 </p>
             </div>
 
@@ -68,7 +68,7 @@
                 </p>
 
                 <p class="mt-2 text-xs text-slate-500">
-                    Employee has not completed profile data
+                    Employees who haven't completed their profile information
                 </p>
             </div>
 

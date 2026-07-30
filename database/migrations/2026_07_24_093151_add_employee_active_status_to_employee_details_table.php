@@ -9,10 +9,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('employee_details', function (Blueprint $table) {
-            $table->boolean('is_active')
-                ->default(true)
-                ->index()
-                ->after('employee_id');
 
             /*
              * Menandai employee terlihat pada batch import mana.
@@ -22,7 +18,7 @@ return new class extends Migration
             $table->uuid('last_seen_import_batch')
                 ->nullable()
                 ->index()
-                ->after('is_active');
+                ->after('employee_id');
 
             $table->timestamp('inactive_at')
                 ->nullable()
@@ -35,7 +31,6 @@ return new class extends Migration
     {
         Schema::table('employee_details', function (Blueprint $table) {
             $table->dropColumn([
-                'is_active',
                 'last_seen_import_batch',
                 'inactive_at',
             ]);

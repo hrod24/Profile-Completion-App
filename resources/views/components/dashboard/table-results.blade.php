@@ -59,8 +59,9 @@
                 <th class="w-16 px-4 py-2.5 text-center text-xs font-bold text-slate-500">No.</th>
                 <th class="min-w-[260px] px-4 py-2.5 text-center text-xs font-bold text-slate-500">Employee</th>
                 <th class="min-w-[260px] px-4 py-2.5 text-center text-xs font-bold text-slate-500">PIC</th>
+                <th class="min-w-[260px] px-4 py-2.5 text-center text-xs font-bold text-slate-500">Source</th>
                 <th class="min-w-[230px] px-4 py-2.5 text-center text-xs font-bold text-slate-500">Data Employee</th>
-                <th class="min-w-[230px] px-4 py-2.5 text-center text-xs font-bold text-slate-500">Data OD</th>
+                <th class="min-w-[230px] px-4 py-2.5 text-center text-xs font-bold text-slate-500">Data HR</th>
                 <th class="min-w-[275px] px-4 py-2.5 text-center text-xs font-bold text-slate-500">Overall Completion</th>
                 <th class="min-w-[275px] px-4 py-2.5 text-center text-xs font-bold text-slate-500">Employment Status</th>
             </tr>
@@ -117,6 +118,14 @@
                                     {{ $employeePic }}</p>
                             </div>
                         </div>
+                    </td>
+
+                    <td class="px-4 py-1 text-center">
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-bold text-slate-900" title="{{ $employeeName }}">
+                                    {{ $employee->sourceData->source ?? "---" }}</p>
+                            </div>
+
                     </td>
                     
                     @foreach ([[$employeeCompletion, $employeeMeta, $employee->profile_completion_filled, $employee->profile_completion_total, 'Kelengkapan data employee'], [$hrCompletion, $hrMeta, $employee->profile_od_completion_filled, $employee->profile_od_completion_total, 'Kelengkapan data OD']] as [$completion, $meta, $filled, $total, $ariaLabel])

@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('business_unit_org_element_1', 100)->nullable();
             $table->string('department_org_element_2', 100)->nullable();
             $table->string('pic_nip',100)->nullable();
+            $table->string('employee_level_code',100)->nullable();
             $table->tinyInteger('active')->default(1);
             $table->string('emergency_full_name', 255)->nullable();
             $table->text('current_address')->nullable();
@@ -79,6 +80,7 @@ return new class extends Migration
             $table->foreign('business_unit_org_element_1')->references('business_unit_code')->on('business_units')->onDelete('cascade');
             $table->foreign('department_org_element_2')->references('department_code')->on('departments')->onDelete('cascade');
             $table->foreign('pic_nip')->references('nip')->on('pics')->onDelete('cascade');
+            $table->foreign('employee_level_code')->references('employee_level_code')->on('sources')->onDelete('cascade');
         });
     }
 

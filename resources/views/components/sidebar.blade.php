@@ -80,8 +80,6 @@
     <div class="app-sidebar__footer">
         <div class="app-sidebar__user">
             <div class="app-sidebar__avatar">{{ $userInitial }}</div>
-
-            <div class=" min-w-0 flex justify-between">
                 <p class="font-bold text-[#4b2d1d]">{{ $userName }}</p>
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
@@ -90,7 +88,6 @@
                         Logout
                     </button>
                 </form>
-            </div>
         </div>
     </div>
 

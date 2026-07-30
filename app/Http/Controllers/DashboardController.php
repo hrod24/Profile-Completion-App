@@ -7,6 +7,7 @@ use App\Models\Pic;
 use App\Models\Department;
 use App\Models\employee_details;
 use Illuminate\Http\Request;
+use App\Models\Source;
 
 class DashboardController extends Controller
 {
@@ -75,6 +76,10 @@ class DashboardController extends Controller
             );
 
         $selectedPics = $normalizeArrayParameter($request->query('pic', []));
+
+        $selectedSources = $normalizeArrayParameter(
+            $request->query('sources', [])
+        );
 
         /*
          * Department dari request belum tentu masih valid.
@@ -307,6 +312,26 @@ class DashboardController extends Controller
             );
         }
 
+        if ($selectedSources->isNotEmpty()) {
+            $filterQuery->whereHas(
+                'sourceData',
+                function ($query) use ($selectedSources) {
+                    $query->whereIn(
+                        'source',
+                        $selectedSources->all()
+                    );
+                }
+            );
+        }
+
+        $sources = Source::query()
+            ->whereNotNull('source')
+            ->where('source', '!=', '')
+            ->select('source')
+            ->distinct()
+            ->orderBy('source')
+            ->pluck('source');
+
         /*
          * ============================================================
          * 8. HITUNG STATISTIK DASHBOARD
@@ -319,7 +344,7 @@ class DashboardController extends Controller
         $totalEmployees =
             (clone $filterQuery)->count();
 
-        $completedEmployees =
+        $completedEmployees =   
             (clone $filterQuery)
             ->employeeDataComplete()
             ->count();
@@ -369,6 +394,7 @@ class DashboardController extends Controller
             )
             : 0;
 
+
         /*
          * ============================================================
          * 9. QUERY KHUSUS TABEL EMPLOYEE
@@ -384,29 +410,18 @@ class DashboardController extends Controller
             clone $filterQuery;
 
         if ($search !== '') {
-            /*
-             * Escape karakter wildcard SQL LIKE.
-             */
-            $escapedSearch = addcslashes(
-                $search,
-                '\\%_'
-            );
-
-            $keyword =
-                "%{$escapedSearch}%";
-
             $employeeQuery->where(
-                function ($query) use ($keyword) {
+                function ($query) use ($search) {
                     $query
                         ->where(
                             'employee_id',
                             'like',
-                            $keyword
+                            "%{$search}%"
                         )
                         ->orWhere(
                             'display_name',
                             'like',
-                            $keyword
+                            "%{$search}%"
                         );
                 }
             );
@@ -419,6 +434,10 @@ class DashboardController extends Controller
          * pada link pagination.
          */
         $allEmployees = $employeeQuery
+            ->with([
+                'pic',
+                'sourceData',
+            ])
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -667,6 +686,11 @@ class DashboardController extends Controller
 
             'search' =>
             $search,
+
+            'sources' => $sources,
+
+            'selectedSources' =>
+            $selectedSources->all(),
 
             /*
              * Memasukkan seluruh statistik ke view.

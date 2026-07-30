@@ -87,6 +87,11 @@ document.addEventListener(
                 "[data-pic-filter-label]"
             );
 
+        const sourceFilterLabel =
+            document.querySelector(
+                "[data-source-filter-label]"
+            );
+
         if (!input || !results) {
             return;
         }
@@ -122,8 +127,12 @@ document.addEventListener(
 
             department:
                 "[data-department-filter-checkbox]",
+
             pic:
                 "[data-pic-filter-checkbox]",
+
+            source:
+                "[data-source-filter-checkbox]",
         };
 
         /*
@@ -282,6 +291,17 @@ document.addEventListener(
                 defaultText:
                     "Filter PIC",
             });
+
+            updateFilterLabel({
+                labelElement:
+                    sourceFilterLabel,
+
+                checkboxSelector:
+                    checkboxSelectors.source,
+
+                defaultText:
+                    "Filter Source",
+            });
         };
 
         /*
@@ -353,6 +373,15 @@ document.addEventListener(
             ).forEach((value) => {
                 url.searchParams.append(
                     "department[]",
+                    value
+                );
+            });
+
+            getCheckedValues(
+                checkboxSelectors.source
+            ).forEach((value) => {
+                url.searchParams.append(
+                    "sources[]",
                     value
                 );
             });
@@ -649,6 +678,7 @@ document.addEventListener(
                             checkboxSelectors.businessUnit,
                             checkboxSelectors.department,
                             checkboxSelectors.pic,
+                            checkboxSelectors.source,
                         ].join(",")
                     );
 
@@ -685,6 +715,8 @@ document.addEventListener(
 
             pic:
                 checkboxSelectors.pic,
+            source:
+                checkboxSelectors.source,
         };
 
         filtersRoot?.addEventListener(
@@ -849,6 +881,11 @@ document.addEventListener(
                 syncCheckboxesFromUrl(
                     checkboxSelectors.pic,
                     "pic[]",
+                    url
+                );
+                syncCheckboxesFromUrl(
+                    checkboxSelectors.source,
+                    "source[]",
                     url
                 );
 

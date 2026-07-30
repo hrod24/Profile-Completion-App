@@ -30,6 +30,7 @@ class EmployeeDetailsSheetImport implements
         'access_id' => 'access_id',
         'time_policy_code' => 'time_policy_code',
         'shift_group_code' => 'shift_group_code',
+        'employee_level_code' => 'employee_level_code',
         'company' => 'company',
         'tax_movement_recalculate' => 'tax_movement_recalculate',
         'residency_status' => 'residency_status',

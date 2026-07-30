@@ -14,7 +14,7 @@ class employee_details extends Model
 
     protected $guarded = ['id'];
 
-    protected $with = ['department', 'pic', 'businessUnit'];
+    protected $with = ['department', 'pic', 'businessUnit', 'sourceData'];
 
     protected $casts = [
         'date_of_birth' => 'date',
@@ -50,6 +50,15 @@ class employee_details extends Model
             Department::class,
             'department_org_element_2',
             'department_code'
+        );
+    }
+
+    public function sourceData(): BelongsTo
+    {
+        return $this->belongsTo(
+            Source::class,
+            'employee_level_code',
+            'employee_level_code'
         );
     }
 
