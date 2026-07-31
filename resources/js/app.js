@@ -5,6 +5,7 @@ import './set-pic';
 import './sidebar-navigation';
 import "./employee-account-synchronize";
 import "./employee-excel-import";
+import './hr-form-live-search';
 
 import Alpine from 'alpinejs';
 

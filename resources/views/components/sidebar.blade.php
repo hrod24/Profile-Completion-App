@@ -19,8 +19,14 @@
         [
             'label' => 'Set PIC',
             'route' => 'set-pic.index',
-            'active' => request()->routeIs('set-pic.index'),
+            'active' => request()->routeIs('set-pic.*'),
             'icon' => 'PIC',
+        ],
+        [
+            'label' => 'Fill Employee Profile',
+            'route' => 'hr-form.index',
+            'active' => request()->routeIs('hr-form.*'),
+            'icon' => 'form',
         ],
     ];
 @endphp
@@ -59,10 +65,15 @@
                             d="M3.75 3.75h6.5v6.5h-6.5v-6.5zm10 0h6.5v6.5h-6.5v-6.5zm-10 10h6.5v6.5h-6.5v-6.5zm10 0h6.5v6.5h-6.5v-6.5z" />
                     </svg>
                 @elseif ($item['icon'] === 'PIC')
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="app-sidebar__nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                            d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H2v-2a4 4 0 014-4h3m6-4a4 4 0 11-8 0 4 4 0 018 0zm6 1a3 3 0 10-4-2.83">
-                        </path>
+                            d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H2v-2a4 4 0 014-4h3m6-4a4 4 0 11-8 0 4 4 0 018 0zm6 1a3 3 0 10-4-2.83" />
+                    </svg>
+                @elseif ($item['icon'] === 'form')
+                    <svg class="app-sidebar__nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.7" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M9 5h6m-6 4h6m-6 4h3m-6 7h12a2 2 0 002-2V6a2 2 0 00-2-2h-2.5a2.5 2.5 0 00-5 0H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                 @else
                     <svg class="app-sidebar__nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -80,15 +91,18 @@
     <div class="app-sidebar__footer">
         <div class="app-sidebar__user">
             <div class="app-sidebar__avatar">{{ $userInitial }}</div>
-                <p class="font-bold text-[#4b2d1d]">{{ $userName }}</p>
-                <form action="{{ route('logout') }}" method="POST">
-                    @csrf
-            
-                    <button type="submit" class="kanmo-btn-secondary">
-                        Logout
-                    </button>
-                </form>
+            <div class="min-w-0 flex-1">
+                <p class="truncate font-bold text-[#4b2d1d]">{{ $userName }}</p>
+                <p class="truncate text-xs text-[#9a755e]">{{ $userEmail }}</p>
+            </div>
         </div>
-    </div>
 
+        <form action="{{ route('logout') }}" method="POST" class="mt-3">
+            @csrf
+
+            <button type="submit" class="kanmo-btn-secondary w-full">
+                Logout
+            </button>
+        </form>
+    </div>
 </aside>

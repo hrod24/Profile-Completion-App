@@ -14,14 +14,6 @@
         $user = $user ?? null;
     @endphp
 
-    <form action="{{ route('logout') }}" method="POST">
-        @csrf
-
-        <button type="submit" class="kanmo-btn-secondary">
-            Logout
-        </button>
-    </form>
-
     <div class="kanmo-page">
         <header class="border-b border-stone-200 bg-white/95 backdrop-blur">
             <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">

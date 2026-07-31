@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeExcelImportController;
 use App\Http\Controllers\EmployeeFormController;
+use App\Http\Controllers\HrFormController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SetPicController;
 use Illuminate\Http\Request;
@@ -25,10 +26,7 @@ Route::get('/', function (Request $request) {
         return redirect()->route('employee.form');
     }
 
-    abort(
-        403,
-        'Akun belum memiliki role yang valid.'
-    );
+    abort(403, 'Akun belum memiliki role yang valid.');
 })
     ->middleware('auth')
     ->name('home');
@@ -63,51 +61,45 @@ Route::middleware([
         [EmployeeExcelImportController::class, 'create']
     )->name('employee.import.create');
 
-
-    // Route::post(
-    //     '/employee-import',
-    //     [EmployeeExcelImportController::class, 'store']
-    // )->name('employee.import.store');
-
     Route::post(
         '/employee-import/start',
-        [
-            EmployeeExcelImportController::class,
-            'startImport',
-        ]
+        [EmployeeExcelImportController::class, 'startImport']
     )->name('employee.import.start');
 
     Route::post(
         '/employee-import/chunk',
-        [
-            EmployeeExcelImportController::class,
-            'processImportChunk',
-        ]
+        [EmployeeExcelImportController::class, 'processImportChunk']
     )->name('employee.import.chunk');
 
     Route::post(
         '/employee-import/finish',
-        [
-            EmployeeExcelImportController::class,
-            'finishImport',
-        ]
+        [EmployeeExcelImportController::class, 'finishImport']
     )->name('employee.import.finish');
 
     Route::post(
         '/synchronize-account/start',
-        [
-            EmployeeExcelImportController::class,
-            'startSynchronization',
-        ]
+        [EmployeeExcelImportController::class, 'startSynchronization']
     )->name('employee.accounts.synchronize.start');
 
     Route::post(
         '/synchronize-account/chunk',
-        [
-            EmployeeExcelImportController::class,
-            'synchronizeChunk',
-        ]
+        [EmployeeExcelImportController::class, 'synchronizeChunk']
     )->name('employee.accounts.synchronize.chunk');
+
+    Route::get(
+        '/hr-form',
+        [HrFormController::class, 'index']
+    )->name('hr-form.index');
+
+    Route::get(
+        '/hr-form/{employeeId}/edit',
+        [HrFormController::class, 'edit']
+    )->name('hr-form.edit');
+
+    Route::put(
+        '/hr-form/{employeeId}',
+        [HrFormController::class, 'update']
+    )->name('hr-form.update');
 });
 
 /*
