@@ -127,7 +127,19 @@ class EmployeeFormController extends Controller
         /*
      * Gunakan seluruh rules milikmu.
      */
+
+        $fileFields = [
+            'ktp_filename',
+            'kk_filename',
+            'ijazah_filename',
+            'npwp_filename',
+        ];
+
         $rules = [
+            /*
+     * Employee ID tidak diambil dari input bebas.
+     * Nilainya sudah di-merge dari akun yang login.
+     */
             'employee_id' => [
                 'required',
                 'string',
@@ -135,11 +147,246 @@ class EmployeeFormController extends Controller
                 'exists:employee_details,employee_id',
             ],
 
-            // Semua rules field text milikmu...
+            /*
+     * ==========================================================
+     * Personal information
+     * ==========================================================
+     */
+            'display_name' => [
+                'string',
+                'max:100',
+            ],
 
+            'gender' => [
+                Rule::in([
+                    'Male',
+                    'Female',
+                ]),
+            ],
+
+            'birth_place' => [
+                'string',
+                'max:100',
+            ],
+
+            'date_of_birth' => [
+                'date',
+                'after_or_equal:1900-01-01',
+                'before_or_equal:today',
+            ],
+
+            'religion' => [
+                Rule::in([
+                    'Islam',
+                    'Kristen',
+                    'Katolik',
+                    'Hindu',
+                    'Buddha',
+                    'Konghucu',
+                    'Other',
+                ]),
+            ],
+
+            'marital_status' => [
+                Rule::in([
+                    'Single',
+                    'Married',
+                    'Divorced',
+                    'Widowed',
+                ]),
+            ],
+
+            'blood_group' => [
+                Rule::in([
+                    'A+',
+                    'B+',
+                    'AB+',
+                    'O+',
+                    'A-',
+                    'B-',
+                    'AB-',
+                    'O-',
+                ]),
+            ],
+
+            'nationality' => [
+                'string',
+                'max:50',
+            ],
+
+            'mother_full_name' => [
+                'string',
+                'max:100',
+            ],
+
+            /*
+     * ==========================================================
+     * Contact and emergency contact
+     * ==========================================================
+     */
+            'primary_email' => [
+                'email:rfc',
+                'max:191',
+            ],
+
+            'primary_contact_number' => [
+                'string',
+                'max:30',
+                'regex:/^[0-9+\-\s()]+$/',
+            ],
+
+            'emergency_full_name' => [
+                'string',
+                'max:100',
+            ],
+
+            'emergency_contact_no' => [
+                'string',
+                'max:30',
+                'regex:/^[0-9+\-\s()]+$/',
+            ],
+
+            /*
+     * ==========================================================
+     * Current/domicile address
+     * ==========================================================
+     */
+            'current_address' => [
+                'string',
+                'max:2000',
+            ],
+
+            'current_provinsi' => [
+                'string',
+                'max:100',
+            ],
+
+            'current_kotamadya_kabupaten' => [
+                'string',
+                'max:100',
+            ],
+
+            'current_kecamatan' => [
+                'string',
+                'max:100',
+            ],
+
+            'current_kelurahan' => [
+                'string',
+                'max:100',
+            ],
+
+            'current_postal_code' => [
+                'string',
+                'digits:5',
+            ],
+
+            /*
+     * ==========================================================
+     * KTP information
+     * ==========================================================
+     */
+            'ktp_number' => [
+                'string',
+                'digits:16',
+            ],
+
+            'ktp_address' => [
+                'string',
+                'max:2000',
+            ],
+
+            'ktp_provinsi' => [
+                'string',
+                'max:100',
+            ],
+
+            'ktp_kotamadya_kabupaten' => [
+                'string',
+                'max:100',
+            ],
+
+            'ktp_kecamatan' => [
+                'string',
+                'max:100',
+            ],
+
+            'ktp_kelurahan' => [
+                'string',
+                'max:100',
+            ],
+
+            /*
+     * Nilai field ini diambil dari current_postal_code
+     * melalui $request->merge().
+     */
+            'ktp_postal_code' => [
+                'string',
+                'digits:5',
+            ],
+
+            /*
+     * ==========================================================
+     * Tax information
+     * ==========================================================
+     */
+            'tax_number' => [
+                'string',
+                'max:30',
+                'regex:/^[0-9.\-]+$/',
+            ],
+
+            /*
+     * ==========================================================
+     * Education information
+     * ==========================================================
+     */
+            'education_level' => [
+                Rule::in([
+                    'SMA',
+                    'SMK',
+                    'D1',
+                    'D2',
+                    'D3',
+                    'D4',
+                    'S1',
+                    'S2',
+                    'S3',
+                ]),
+            ],
+
+            'major' => [
+                'string',
+                'max:100',
+            ],
+
+            'institution_name' => [
+                'string',
+                'max:150',
+            ],
+
+            'education_from' => [
+                'integer',
+                'digits:4',
+                'between:1800,2100',
+            ],
+
+            'education_end' => [
+                'integer',
+                'digits:4',
+                'between:1900,2100',
+                'gte:education_from',
+            ],
+
+            /*
+     * ==========================================================
+     * Employee documents
+     * ==========================================================
+     */
             'ktp_filename' => [
                 Rule::requiredIf(
-                    fn() => $documentIsMissing('ktp_filename')
+                    fn(): bool =>
+                    $documentIsMissing('ktp_filename')
                 ),
                 'file',
                 'mimes:pdf,jpg,jpeg,png',
@@ -148,7 +395,8 @@ class EmployeeFormController extends Controller
 
             'kk_filename' => [
                 Rule::requiredIf(
-                    fn() => $documentIsMissing('kk_filename')
+                    fn(): bool =>
+                    $documentIsMissing('kk_filename')
                 ),
                 'file',
                 'mimes:pdf,jpg,jpeg,png',
@@ -157,7 +405,8 @@ class EmployeeFormController extends Controller
 
             'ijazah_filename' => [
                 Rule::requiredIf(
-                    fn() => $documentIsMissing('ijazah_filename')
+                    fn(): bool =>
+                    $documentIsMissing('ijazah_filename')
                 ),
                 'file',
                 'mimes:pdf,jpg,jpeg,png',
@@ -166,7 +415,8 @@ class EmployeeFormController extends Controller
 
             'npwp_filename' => [
                 Rule::requiredIf(
-                    fn() => $documentIsMissing('npwp_filename')
+                    fn(): bool =>
+                    $documentIsMissing('npwp_filename')
                 ),
                 'file',
                 'mimes:pdf,jpg,jpeg,png',
@@ -186,48 +436,237 @@ class EmployeeFormController extends Controller
             );
         }
 
-        foreach ($employeeRequiredFields as $field) {
+        foreach ($rules as $field => &$fieldRules) {
+            /*
+     * Employee ID sudah required secara permanen.
+     */
+            if ($field === 'employee_id') {
+                continue;
+            }
+
+            /*
+     * File menggunakan Rule::requiredIf().
+     */
             if (in_array($field, $fileFields, true)) {
                 continue;
             }
 
-            array_unshift(
-                $rules[$field],
-                'required'
-            );
+            if (
+                in_array(
+                    $field,
+                    $employeeRequiredFields,
+                    true
+                )
+            ) {
+                array_unshift(
+                    $fieldRules,
+                    'required'
+                );
 
-            $rules[$field][] = $notPlaceholder;
+                $fieldRules[] = $notPlaceholder;
+            } else {
+                /*
+         * Jika nanti suatu field dihapus dari daftar wajib,
+         * nilai kosong tetap diperbolehkan.
+         */
+                array_unshift(
+                    $fieldRules,
+                    'nullable'
+                );
+            }
         }
+
+        unset($fieldRules);
 
         $validated = $request->validate(
             $rules,
             [
+                'employee_id.exists' =>
+                'Employee ID tidak ditemukan.',
+
+                'date_of_birth.date' =>
+                'Tanggal lahir harus berupa tanggal yang valid.',
+
+                'date_of_birth.after_or_equal' =>
+                'Tanggal lahir tidak valid.',
+
                 'date_of_birth.before_or_equal' =>
                 'Tanggal lahir tidak boleh melebihi hari ini.',
 
+                'primary_email.email' =>
+                'Format email utama tidak valid.',
+
                 'primary_contact_number.regex' =>
-                'Format nomor kontak utama tidak valid.',
+                'Nomor kontak utama hanya boleh berisi angka, tanda +, tanda -, spasi, atau tanda kurung.',
 
                 'emergency_contact_no.regex' =>
-                'Format nomor kontak darurat tidak valid.',
+                'Nomor kontak darurat hanya boleh berisi angka, tanda +, tanda -, spasi, atau tanda kurung.',
 
-                'ktp_number.regex' =>
-                'Nomor KTP hanya boleh berisi angka.',
+                'ktp_number.digits' =>
+                'Nomor KTP harus terdiri dari tepat 16 angka.',
+
+                'tax_number.regex' =>
+                'Nomor pajak hanya boleh berisi angka, titik, dan tanda hubung.',
+
+                'current_postal_code.digits' =>
+                'Kode pos domisili harus terdiri dari 5 angka.',
+
+                'ktp_postal_code.digits' =>
+                'Kode pos KTP harus terdiri dari 5 angka.',
+
+                'education_from.integer' =>
+                'Tahun mulai pendidikan harus berupa angka.',
+
+                'education_from.digits' =>
+                'Tahun mulai pendidikan harus terdiri dari 4 angka.',
+
+                'education_from.between' =>
+                "Tahun mulai pendidikan harus berada antara 1800 dan 2100.",
+
+                'education_end.integer' =>
+                'Tahun selesai pendidikan harus berupa angka.',
+
+                'education_end.digits' =>
+                'Tahun selesai pendidikan harus terdiri dari 4 angka.',
+
+                'education_end.between' =>
+                "Tahun selesai pendidikan harus berada antara 1800 dan 2100.",
 
                 'education_end.gte' =>
                 'Tahun selesai pendidikan tidak boleh lebih kecil dari tahun mulai pendidikan.',
 
                 'ktp_filename.required' =>
-                'File KTP wajib diupload.',
+                'File KTP wajib diunggah.',
 
                 'kk_filename.required' =>
-                'File KK wajib diupload.',
+                'File Kartu Keluarga wajib diunggah.',
 
                 'ijazah_filename.required' =>
-                'File ijazah wajib diupload.',
+                'File ijazah wajib diunggah.',
 
                 'npwp_filename.required' =>
-                'File NPWP wajib diupload.',
+                'File NPWP wajib diunggah.',
+
+                'ktp_filename.mimes' =>
+                'File KTP harus berformat PDF, JPG, JPEG, atau PNG.',
+
+                'kk_filename.mimes' =>
+                'File Kartu Keluarga harus berformat PDF, JPG, JPEG, atau PNG.',
+
+                'ijazah_filename.mimes' =>
+                'File ijazah harus berformat PDF, JPG, JPEG, atau PNG.',
+
+                'npwp_filename.mimes' =>
+                'File NPWP harus berformat PDF, JPG, JPEG, atau PNG.',
+
+                'ktp_filename.max' =>
+                'Ukuran file KTP maksimal 5 MB.',
+
+                'kk_filename.max' =>
+                'Ukuran file Kartu Keluarga maksimal 5 MB.',
+
+                'ijazah_filename.max' =>
+                'Ukuran file ijazah maksimal 5 MB.',
+
+                'npwp_filename.max' =>
+                'Ukuran file NPWP maksimal 5 MB.',
+            ],
+            [
+                'display_name' =>
+                'nama lengkap',
+
+                'gender' =>
+                'jenis kelamin',
+
+                'birth_place' =>
+                'tempat lahir',
+
+                'date_of_birth' =>
+                'tanggal lahir',
+
+                'religion' =>
+                'agama',
+
+                'marital_status' =>
+                'status pernikahan',
+
+                'blood_group' =>
+                'golongan darah',
+
+                'nationality' =>
+                'kewarganegaraan',
+
+                'mother_full_name' =>
+                'nama lengkap ibu',
+
+                'primary_email' =>
+                'email utama',
+
+                'primary_contact_number' =>
+                'nomor kontak utama',
+
+                'emergency_full_name' =>
+                'nama kontak darurat',
+
+                'emergency_contact_no' =>
+                'nomor kontak darurat',
+
+                'current_address' =>
+                'alamat domisili',
+
+                'current_provinsi' =>
+                'provinsi domisili',
+
+                'current_kotamadya_kabupaten' =>
+                'kota/kabupaten domisili',
+
+                'current_kecamatan' =>
+                'kecamatan domisili',
+
+                'current_kelurahan' =>
+                'kelurahan domisili',
+
+                'current_postal_code' =>
+                'kode pos domisili',
+
+                'ktp_number' =>
+                'nomor KTP',
+
+                'ktp_address' =>
+                'alamat KTP',
+
+                'ktp_provinsi' =>
+                'provinsi KTP',
+
+                'ktp_kotamadya_kabupaten' =>
+                'kota/kabupaten KTP',
+
+                'ktp_kecamatan' =>
+                'kecamatan KTP',
+
+                'ktp_kelurahan' =>
+                'kelurahan KTP',
+
+                'ktp_postal_code' =>
+                'kode pos KTP',
+
+                'tax_number' =>
+                'nomor pajak',
+
+                'education_level' =>
+                'tingkat pendidikan',
+
+                'major' =>
+                'jurusan',
+
+                'institution_name' =>
+                'nama institusi pendidikan',
+
+                'education_from' =>
+                'tahun mulai pendidikan',
+
+                'education_end' =>
+                'tahun selesai pendidikan',
             ]
         );
 
@@ -353,7 +792,7 @@ class EmployeeFormController extends Controller
             ->route('employee.form')
             ->with(
                 'success',
-                'Data employee berhasil dilengkapi.'
+            'Employee data has been successfully processed. Please leave this page or press the log out button. You can log in again later to update your data if needed.'
             );
     }
 

@@ -90,7 +90,8 @@ return [
     'company' => [
       'label' => 'Company',
       'group' => 'employment',
-      'type' => 'text',
+      'type' => 'select',
+      'options' => ['PT. ADI SPORT RETAILINDO', 'PT. KANMO GAYA ABADI', 'PT. KANMO MULTI GEMILANG', 'PT. KANMO RETAILINDO', 'PT. KANMO WESTON RETAILINDO', 'PT. MULTITREND INDO'],
     ],
     'date_of_join' => [
       'label' => 'Date of Join',

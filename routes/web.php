@@ -47,6 +47,11 @@ Route::middleware([
     )->name('dashboard');
 
     Route::get(
+        '/dashboard/employees/{employeeId}/details',
+        [DashboardController::class, 'employeeDetails']
+    )->name('dashboard.employee-details');
+
+    Route::get(
         '/set-pic',
         [SetPicController::class, 'show']
     )->name('set-pic.index');

@@ -738,9 +738,9 @@
                             <p class="font-light text-[12px] italic text-gray-600">pdf, jpg, jpeg, png</p>
                         </label>
                         <input type="file" id="ijazah_filename" name="ijazah_filename" class="filepond"
-                            @required($isEmployeeRequired('ijazah_filename') ?? ($existingDocuments['ijazah_filename'] ?? false))
-                            data-existing-file="{{ $existingDocuments['ijazah_filename'] ? 'true' : 'false' }}"
-                            data-existing-file-name="{{ $user?->ijazah_filename ?? '' }}" />
+                            @required($isEmployeeRequired('ijazah_filename') && !($existingDocuments['ijazah_filename'] ?? false))
+                            data-existing-file="{{ $existingDocuments['ijazah_filename'] ?? false ? 'true' : 'false' }}"
+                            data-existing-file-name="{{ $user?->ijazah_filename ?? '' }}">
                         @if ($user?->ijazah_filename)
                             <div class="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
                                 <p class="text-xs font-semibold text-emerald-700">
@@ -765,9 +765,9 @@
                             <p class="font-light text-[12px] italic text-gray-600">pdf, jpg, jpeg, png</p>
                         </label>
                         <input type="file" id="ktp_filename" name="ktp_filename" class="filepond"
-                            @required($isEmployeeRequired('ktp_filename') ?? ($existingDocuments['ktp_filename'] ?? false))
-                            data-existing-file="{{ $existingDocuments['ktp_filename'] ? 'true' : 'false' }}"
-                            data-existing-file-name="{{ $user?->ktp_filename ?? '' }}" />
+                            @required($isEmployeeRequired('ktp_filename') && !($existingDocuments['ktp_filename'] ?? false))
+                            data-existing-file="{{ $existingDocuments['ktp_filename'] ?? false ? 'true' : 'false' }}"
+                            data-existing-file-name="{{ $user?->ktp_filename ?? '' }}">
 
                         @if ($user?->ktp_filename)
                             <div class="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
@@ -793,9 +793,9 @@
                             <p class="font-light text-[12px] italic text-gray-600">pdf, jpg, jpeg, png</p>
                         </label>
                         <input type="file" id="kk_filename" name="kk_filename" class="filepond"
-                            @required($isEmployeeRequired('kk_filename') ?? ($existingDocuments['kk_filename'] ?? false))
-                            data-existing-file="{{ $existingDocuments['kk_filename'] ? 'true' : 'false' }}"
-                            data-existing-file-name="{{ $user?->kk_filename ?? '' }}" />
+                            @required($isEmployeeRequired('kk_filename') && !($existingDocuments['kk_filename'] ?? false))
+                            data-existing-file="{{ $existingDocuments['kk_filename'] ?? false ? 'true' : 'false' }}"
+                            data-existing-file-name="{{ $user?->kk_filename ?? '' }}">
 
                         @if ($user?->kk_filename)
                             <div class="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
@@ -821,9 +821,9 @@
                             <p class="font-light text-[12px] italic text-gray-600">pdf, jpg, jpeg, png</p>
                         </label>
                         <input type="file" id="npwp_filename" name="npwp_filename" class="filepond"
-                            @required($isEmployeeRequired('npwp_filename') ?? ($existingDocuments['npwp_filename'] ?? false))
-                            data-existing-file="{{ $existingDocuments['npwp_filename'] ? 'true' : 'false' }}"
-                            data-existing-file-name="{{ $user?->npwp_filename ?? '' }}" />
+                            @required($isEmployeeRequired('npwp_filename') && !($existingDocuments['npwp_filename'] ?? false))
+                            data-existing-file="{{ $existingDocuments['npwp_filename'] ?? false ? 'true' : 'false' }}"
+                            data-existing-file-name="{{ $user?->npwp_filename ?? '' }}">
                         @if ($user?->npwp_filename)
                             <div class="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
                                 <p class="text-xs font-semibold text-emerald-700">

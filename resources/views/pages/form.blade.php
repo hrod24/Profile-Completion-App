@@ -60,6 +60,13 @@
                         <div>
                             <p class="font-bold">Data Saved Successfully</p>
                             <p class="mt-0.5">{{ session('success') }}</p>
+                            <form action="{{ route('logout') }}" method="POST" class="mt-3">
+                                @csrf
+
+                                <button type="submit" class="kanmo-btn-secondary">
+                                    Logout
+                                </button>
+                            </form>
                         </div>
                     </div>
                 @endif

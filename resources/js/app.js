@@ -6,6 +6,7 @@ import './sidebar-navigation';
 import "./employee-account-synchronize";
 import "./employee-excel-import";
 import './hr-form-live-search';
+import "./employee-details-modal";
 
 import Alpine from 'alpinejs';
 
