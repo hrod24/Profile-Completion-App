@@ -1,14 +1,36 @@
 <x-layout title="Edit HR Employee Profile">
     @php
-        $totalFields = collect($groups)->sum(fn(array $group): int => count($group['fields']));
-        $completedFields = collect($groups)
-            ->flatMap(fn(array $group) => $group['fields'])
+        /*
+         * Field dependent select.
+         */
+        $businessUnitFieldName = 'business_unit_org_element_1';
+
+        $departmentFieldName = 'department_org_element_2';
+
+        $selectedBusinessUnit = old($businessUnitFieldName, $employeeData[$businessUnitFieldName] ?? '');
+
+        $selectedDepartment = old($departmentFieldName, $employeeData[$departmentFieldName] ?? '');
+
+        $initialDepartmentOptions = $departmentsByBusinessUnit[$selectedBusinessUnit] ?? [];
+
+        /*
+         * Perhitungan progress HR.
+         */
+        $allFields = collect($groups)->flatMap(fn(array $group) => $group['fields']);
+
+        $totalFields = $allFields->count();
+
+        $completedFields = $allFields
             ->filter(function (array $field) use ($employeeData): bool {
-                $value = old($field['name'], $employeeData[$field['name']] ?? null);
+                $fieldName = $field['name'];
+
+                $value = old($fieldName, $employeeData[$fieldName] ?? null);
+
                 return $value !== null && trim((string) $value) !== '';
             })
             ->count();
-        $completionPercentage = $totalFields > 0 ? round(($completedFields / $totalFields) * 100) : 0;
+
+        $completionPercentage = $totalFields > 0 ? (int) round(($completedFields / $totalFields) * 100) : 0;
     @endphp
 
     <x-app-shell title="Edit HR Employee Profile" subtitle="Complete the remaining HR fields and save the changes.">
@@ -71,7 +93,6 @@
             @csrf
             @method('PUT')
             <input type="hidden" name="_pic_filter" value="{{ request('pic') }}">
-            <input type="hidden" name="_pic_filter" value="{{ request('pic') }}">
 
             <input type="hidden" name="_search_filter" value="{{ request('search') }}">
 
@@ -118,13 +139,46 @@
                                         </span>
                                     </div>
 
-                                    @if ($field['type'] === 'select')
+
+
+                                    @if ($fieldName === $businessUnitFieldName)
+                                        <select id="{{ $fieldName }}" name="{{ $fieldName }}" required
+                                            data-business-unit-field data-hr-required-field
+                                            class="{{ $baseClass }} {{ $stateClass }}">
+                                            <option value="">Select a business unit</option>
+
+                                            @foreach ($businessUnits as $businessUnit)
+                                                <option value="{{ $businessUnit->code }}" @selected((string) $fieldValue === (string) $businessUnit->code)>
+                                                    {{ $businessUnit->name }} ({{ $businessUnit->code }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    @elseif ($fieldName === $departmentFieldName)
+                                        <select id="{{ $fieldName }}" name="{{ $fieldName }}" required
+                                            data-department-field data-initial-department="{{ $selectedDepartment }}"
+                                            data-hr-required-field @disabled($selectedBusinessUnit === '')
+                                            class="{{ $baseClass }} {{ $stateClass }} disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400">
+                                            <option value="">
+                                                {{ $selectedBusinessUnit === '' ? 'Select a business unit first' : 'Select a department' }}
+                                            </option>
+
+                                            @foreach ($initialDepartmentOptions as $department)
+                                                <option value="{{ $department['code'] }}" @selected((string) $fieldValue === (string) $department['code'])>
+                                                    {{ $department['name'] }}
+                                                    —
+                                                    {{ $department['code'] }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    @elseif ($field['type'] === 'select')
                                         <select id="{{ $fieldName }}" name="{{ $fieldName }}" required
                                             class="{{ $baseClass }} {{ $stateClass }}" data-hr-required-field>
                                             <option value="">Select a value</option>
+
                                             @foreach ($field['options'] as $option)
                                                 <option value="{{ $option }}" @selected((string) $fieldValue === (string) $option)>
-                                                    {{ $option }}</option>
+                                                    {{ $option }}
+                                                </option>
                                             @endforeach
                                         </select>
                                     @elseif ($field['type'] === 'textarea')
@@ -155,7 +209,7 @@
                     will automatically be removed from this list.</p>
 
                 <button type="submit"
-                    class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 text-sm font-bold text-white shadow-[0_8px_20px_rgba(249,115,22,0.22)] transition hover:bg-orange-600 focus:outline-none focus:ring-4 focus:ring-orange-200 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
+                    class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 text-sm font-bold text-white shadow-[0_8px_20px_rgba(249,115,22,0.22)] transition hover:bg-orange-600 focus:outline-none focus:ring-4 focus:ring-orange-200 disabled:cursor-not-allowed cursor-pointer disabled:opacity-70 sm:w-auto"
                     data-save-hr-button>
                     <svg class="hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" data-save-hr-spinner
                         aria-hidden="true">
@@ -165,7 +219,7 @@
                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
                         </path>
                     </svg>
-                    <span data-save-hr-label>Save HR Data</span>
+                    <span data-save-hr-label>Save Data</span>
                 </button>
             </div>
         </form>
@@ -185,6 +239,11 @@
                 const saveButton = form.querySelector('[data-save-hr-button]');
                 const saveSpinner = form.querySelector('[data-save-hr-spinner]');
                 const saveLabel = form.querySelector('[data-save-hr-label]');
+                const businessUnitField = form.querySelector('[data-business-unit-field]');
+                const departmentField = form.querySelector('[data-department-field]');
+
+                const departmentsByBusinessUnit =
+                    {{ \Illuminate\Support\Js::from($departmentsByBusinessUnit) }};
 
                 const hasValue = (field) => String(field.value ?? '').trim() !== '';
 
@@ -214,6 +273,94 @@
                     });
                 };
 
+                const createDepartmentOption = (department) => {
+                    const option = document.createElement('option');
+
+                    option.value = department.code;
+                    option.textContent =
+                        `${department.name} — ${department.code}`;
+
+                    return option;
+                };
+
+                const renderDepartmentOptions = (
+                    preserveInitialValue = false
+                ) => {
+                    if (!businessUnitField || !departmentField) {
+                        return;
+                    }
+
+                    const businessUnitCode =
+                        String(businessUnitField.value ?? '').trim();
+
+                    const selectedDepartment = preserveInitialValue ?
+                        String(
+                            departmentField.dataset.initialDepartment ?? ''
+                        ) :
+                        '';
+
+                    departmentField.innerHTML = '';
+
+                    const placeholder = document.createElement('option');
+
+                    placeholder.value = '';
+
+                    if (businessUnitCode === '') {
+                        placeholder.textContent =
+                            'Select a business unit first';
+
+                        departmentField.appendChild(placeholder);
+                        departmentField.disabled = true;
+                        departmentField.value = '';
+
+                        updateProgress();
+
+                        return;
+                    }
+
+                    placeholder.textContent = 'Select a department';
+
+                    departmentField.appendChild(placeholder);
+                    departmentField.disabled = false;
+
+                    const departments =
+                        departmentsByBusinessUnit[businessUnitCode] ?? [];
+
+                    departments.forEach((department) => {
+                        departmentField.appendChild(
+                            createDepartmentOption(department)
+                        );
+                    });
+
+                    const departmentStillAvailable =
+                        departments.some(
+                            (department) =>
+                            String(department.code) ===
+                            selectedDepartment
+                        );
+
+                    departmentField.value = departmentStillAvailable ?
+                        selectedDepartment :
+                        '';
+
+                    updateProgress();
+                };
+
+                businessUnitField?.addEventListener(
+                    'change',
+                    () => {
+                        /*
+                         * Ketika Business Unit berubah,
+                         * Department lama harus dikosongkan.
+                         */
+                        if (departmentField) {
+                            departmentField.dataset.initialDepartment = '';
+                        }
+
+                        renderDepartmentOptions(false);
+                    }
+                );
+
                 fields.forEach((field) => {
                     field.addEventListener('input', updateProgress);
                     field.addEventListener('change', updateProgress);
@@ -226,6 +373,7 @@
                     if (saveLabel) saveLabel.textContent = 'Saving HR Data...';
                 });
 
+                renderDepartmentOptions(true);
                 updateProgress();
             });
         </script>

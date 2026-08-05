@@ -115,10 +115,79 @@ class HrFormController extends Controller
 
         $employeeData = $this->normalizeEmployeeForForm((array) $employee);
 
+        $organizationConfig = $this->organizationConfig();
+
+        $businessUnits = DB::table(
+            $organizationConfig['business_unit_table']
+        )
+            ->select([
+                $organizationConfig['business_unit_code_column']
+                    . ' as code',
+
+                $organizationConfig['business_unit_name_column']
+                    . ' as name',
+            ])
+            ->orderBy(
+                $organizationConfig['business_unit_name_column']
+            )
+            ->orderBy(
+                $organizationConfig['business_unit_code_column']
+            )
+            ->get();
+
+        $departmentsByBusinessUnit = DB::table(
+            $organizationConfig['relation_table'] . ' as relation'
+        )
+            ->join(
+                $organizationConfig['department_table'] . ' as department',
+                'department.'
+                    . $organizationConfig['department_code_column'],
+                '=',
+                'relation.'
+                    . $organizationConfig['relation_department_column']
+            )
+            ->select([
+                'relation.'
+                    . $organizationConfig['relation_business_unit_column']
+                    . ' as business_unit_code',
+
+                'department.'
+                    . $organizationConfig['department_code_column']
+                    . ' as code',
+
+                'department.'
+                    . $organizationConfig['department_name_column']
+                    . ' as name',
+            ])
+            ->orderBy(
+                'department.'
+                    . $organizationConfig['department_name_column']
+            )
+            ->orderBy(
+                'department.'
+                    . $organizationConfig['department_code_column']
+            )
+            ->get()
+            ->groupBy('business_unit_code')
+            ->map(function ($departments): array {
+                return $departments
+                    ->map(function ($department): array {
+                        return [
+                            'code' => $department->code,
+                            'name' => $department->name,
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            })
+            ->all();
+
         return view('hr-form.edit', [
             'employee' => $employee,
             'employeeData' => $employeeData,
             'groups' => $this->formGroups(),
+            'businessUnits' => $businessUnits,
+            'departmentsByBusinessUnit' => $departmentsByBusinessUnit,
         ]);
     }
 
@@ -147,6 +216,12 @@ class HrFormController extends Controller
 
         $fields = $this->editableFields();
         $payload = $this->normalizePayload($request->only($fields));
+        $organizationConfig = $this->organizationConfig();
+
+        $businessUnitField = 'business_unit_org_element_1';
+        $departmentField = 'department_org_element_2';
+
+        $selectedBusinessUnit = $payload[$businessUnitField] ?? '';
         $rules = [];
         $attributes = [];
 
@@ -155,6 +230,45 @@ class HrFormController extends Controller
             $type = $meta['type'] ?? 'text';
             $attributes[$field] = $meta['label']
                 ?? str($field)->replace('_', ' ')->title()->toString();
+
+            if ($field === $businessUnitField) {
+                $rules[$field] = [
+                    'bail',
+                    'required',
+                    'string',
+                    Rule::exists(
+                        $organizationConfig['business_unit_table'],
+                        $organizationConfig['business_unit_code_column']
+                    ),
+                ];
+
+                continue;
+            }
+
+            if ($field === $departmentField) {
+                $rules[$field] = [
+                    'bail',
+                    'required',
+                    'string',
+
+                    Rule::exists(
+                        $organizationConfig['relation_table'],
+                        $organizationConfig['relation_department_column']
+                    )->where(
+                        function ($query) use (
+                            $organizationConfig,
+                            $selectedBusinessUnit
+                        ): void {
+                            $query->where(
+                                $organizationConfig['relation_business_unit_column'],
+                                $selectedBusinessUnit
+                            );
+                        }
+                    ),
+                ];
+
+                continue;
+            }
 
             if ($type === 'date') {
                 $rules[$field] = ['bail', 'required', 'date_format:Y-m-d'];
@@ -180,7 +294,14 @@ class HrFormController extends Controller
                 'required' => ':attribute wajib diisi.',
                 'date_format' => ':attribute harus menggunakan format tanggal yang valid.',
                 'in' => ':attribute memiliki nilai yang tidak valid.',
+                'exists' => ':attribute memiliki nilai yang tidak valid.',
                 'max' => ':attribute terlalu panjang.',
+
+                $businessUnitField . '.exists' =>
+                'Business Unit yang dipilih tidak tersedia.',
+
+                $departmentField . '.exists' =>
+                'Department yang dipilih tidak berelasi dengan Business Unit.',
             ],
             $attributes
         )->validate();
@@ -407,5 +528,22 @@ class HrFormController extends Controller
     private function quoteIdentifier(string $identifier): string
     {
         return '`' . str_replace('`', '``', $identifier) . '`';
+    }
+
+    private function organizationConfig(): array
+    {
+        return array_merge([
+            'business_unit_table' => 'business_units',
+            'business_unit_code_column' => 'business_unit_code',
+            'business_unit_name_column' => 'business_unit_name',
+
+            'department_table' => 'departments',
+            'department_code_column' => 'department_code',
+            'department_name_column' => 'department_name',
+
+            'relation_table' => 'business_unit_and_departments',
+            'relation_business_unit_column' => 'business_unit_code',
+            'relation_department_column' => 'department_code',
+        ], config('employee.hr_organization_relations', []));
     }
 }

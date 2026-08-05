@@ -116,14 +116,17 @@ return [
     'department_org_element_2' => [
       'label' => 'Department (Org Element 2)',
       'group' => 'organization',
-      'type' => 'text',
-      'placeholder' => 'Contoh: DEP00078',
+      'type' => 'select',
+      'options' => [],
+      'placeholder' => 'Select a department',
     ],
+
     'business_unit_org_element_1' => [
       'label' => 'Business Unit (Org Element 1)',
       'group' => 'organization',
-      'type' => 'text',
-      'placeholder' => 'Contoh: DIV00009',
+      'type' => 'select',
+      'options' => [],
+      'placeholder' => 'Select a business unit',
     ],
     'shift_group_code' => [
       'label' => 'Shift Group Code',
@@ -229,6 +232,26 @@ return [
     'pic_table' => 'pics',
     'pic_primary_key' => 'nip',
     'pic_name_column' => 'name',
+  ],
+
+  /*
+|--------------------------------------------------------------------------
+| Business Unit dan Department
+|--------------------------------------------------------------------------
+*/
+
+  'hr_organization_relations' => [
+    'business_unit_table' => 'business_units',
+    'business_unit_code_column' => 'business_unit_code',
+    'business_unit_name_column' => 'business_unit_name',
+
+    'department_table' => 'departments',
+    'department_code_column' => 'department_code',
+    'department_name_column' => 'department_name',
+
+    'relation_table' => 'business_unit_and_departments',
+    'relation_business_unit_column' => 'business_unit_code',
+    'relation_department_column' => 'department_code',
   ],
 
   /*
