@@ -71,6 +71,10 @@
                             <li>New Employee IDs will be inserted.</li>
                             <li>Empty values will not erase existing data.</li>
                             <li>Any conflict will cancel the entire import.</li>
+                            <li>
+                                Files downloaded from the dashboard are report-only
+                                and cannot be uploaded through Employee Import.
+                            </li>
                         </ul>
                     </div>
 

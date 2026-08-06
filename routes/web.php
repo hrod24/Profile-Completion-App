@@ -4,6 +4,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeExcelImportController;
 use App\Http\Controllers\EmployeeFormController;
 use App\Http\Controllers\HrFormController;
+use App\Http\Controllers\EmployeeExportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SetPicController;
 use Illuminate\Http\Request;
@@ -45,6 +46,11 @@ Route::middleware([
         '/dashboard',
         [DashboardController::class, 'index']
     )->name('dashboard');
+
+    Route::get(
+        '/dashboard/employees/export',
+        EmployeeExportController::class
+    )->name('dashboard.employee-export');
 
     Route::get(
         '/dashboard/employees/{employeeId}/details',

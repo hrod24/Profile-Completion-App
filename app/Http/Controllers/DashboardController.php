@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\EmployeeDashboardFilters;
 use App\Models\BusinessUnit;
 use App\Models\Pic;
 use App\Models\Department;
@@ -409,8 +410,8 @@ class DashboardController extends Controller
          *
          * Search nama/NIP hanya memengaruhi tabel.
          */
-        $employeeQuery =
-            clone $filterQuery;
+        $employeeQuery = employee_details::query();
+        EmployeeDashboardFilters::apply($employeeQuery, $request);
 
         if ($search !== '') {
             $employeeQuery->where(
@@ -437,10 +438,7 @@ class DashboardController extends Controller
          * pada link pagination.
          */
         $allEmployees = $employeeQuery
-            ->with([
-                'pic',
-                'sourceData',
-            ])
+            ->with(['pic', 'sourceData'])
             ->latest()
             ->paginate(15)
             ->withQueryString();
