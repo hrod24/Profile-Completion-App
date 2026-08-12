@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\EmployeeDashboardFilters;
 use App\Models\BusinessUnit;
 use App\Models\Pic;
 use App\Models\Department;
 use App\Models\employee_details;
 use Illuminate\Http\Request;
 use App\Models\Source;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class DashboardController extends Controller
 {
@@ -406,8 +410,8 @@ class DashboardController extends Controller
          *
          * Search nama/NIP hanya memengaruhi tabel.
          */
-        $employeeQuery =
-            clone $filterQuery;
+        $employeeQuery = employee_details::query();
+        EmployeeDashboardFilters::apply($employeeQuery, $request);
 
         if ($search !== '') {
             $employeeQuery->where(
@@ -434,10 +438,7 @@ class DashboardController extends Controller
          * pada link pagination.
          */
         $allEmployees = $employeeQuery
-            ->with([
-                'pic',
-                'sourceData',
-            ])
+            ->with(['pic', 'sourceData'])
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -696,6 +697,207 @@ class DashboardController extends Controller
              * Memasukkan seluruh statistik ke view.
              */
             ...$statisticsData,
+        ]);
+    }
+
+    public function employeeDetails(string $employeeId): JsonResponse
+    {
+        $employee = employee_details::query()
+            ->with([
+                'pic',
+                'sourceData',
+            ])
+            ->where('employee_id', $employeeId)
+            ->firstOrFail();
+
+        /*
+     * Ambil seluruh kolom asli pada tabel employee_details.
+     */
+        $tableColumns = Schema::getColumnListing(
+            $employee->getTable()
+        );
+
+        /*
+     * Kolom teknis tidak perlu ditampilkan kepada admin.
+     * Hapus dari daftar ini jika Anda tetap ingin menampilkannya.
+     */
+        $hiddenColumns = [
+            'id',
+            'created_at',
+            'updated_at',
+            'deleted_at',
+        ];
+
+        $employeeConfiguredFields = array_values(
+            array_unique(
+                config('employee.employee_required_fields', [])
+            )
+        );
+
+        $hrConfiguredFields = array_values(
+            array_unique(
+                config('employee.hr_required_fields', [])
+            )
+        );
+
+        /*
+     * Pastikan field identitas utama tetap masuk
+     * ke kelompok Employee Data.
+     */
+        $employeeFields = array_values(
+            array_unique([
+                'display_name',
+                ...$employeeConfiguredFields,
+            ])
+        );
+
+        $employeeFields = array_values(
+            array_intersect(
+                $employeeFields,
+                $tableColumns
+            )
+        );
+
+        $hrFields = array_values(
+            array_intersect(
+                $hrConfiguredFields,
+                $tableColumns
+            )
+        );
+
+        /*
+     * Kolom lain yang tidak tercantum dalam konfigurasi
+     * tetap ditampilkan sebagai Additional Data.
+     */
+        $additionalFields = array_values(
+            array_diff(
+                $tableColumns,
+                $hiddenColumns,
+                $employeeFields,
+                $hrFields
+            )
+        );
+
+        $makeLabel = static function (string $field): string {
+            $label = Str::of($field)
+                ->replace('_', ' ')
+                ->title()
+                ->toString();
+
+            return str_replace(
+                [
+                    ' Id',
+                    'Ktp',
+                    'Npwp',
+                    'Bpjs',
+                    'Pic',
+                    ' Hr',
+                    ' Od',
+                    'Sso',
+                ],
+                [
+                    ' ID',
+                    'KTP',
+                    'NPWP',
+                    'BPJS',
+                    'PIC',
+                    ' HR',
+                    ' OD',
+                    'SSO',
+                ],
+                $label
+            );
+        };
+
+        $makeFields = static function (
+            array $fields
+        ) use (
+            $employee,
+            $makeLabel
+        ): array {
+            return collect($fields)
+                ->map(function (string $field) use (
+                    $employee,
+                    $makeLabel
+                ): array {
+                    $rawValue = data_get(
+                        $employee,
+                        $field
+                    );
+
+                    /*
+                 * Nilai 0 tetap dianggap terisi.
+                 */
+                    $isFilled = $rawValue !== null
+                        && (
+                            !is_string($rawValue)
+                            || trim($rawValue) !== ''
+                        ) && $rawValue != '---' && $rawValue != '--';
+
+                    $displayValue = null;
+
+                    if ($isFilled) {
+                        if ($field === 'active') {
+                            $displayValue = (int) $rawValue === 1
+                                ? 'Active'
+                                : 'Blocked';
+                        } elseif ($rawValue instanceof \DateTimeInterface) {
+                            $displayValue = $rawValue->format(
+                                'd M Y'
+                            );
+                        } elseif (is_bool($rawValue)) {
+                            $displayValue = $rawValue
+                                ? 'Yes'
+                                : 'No';
+                        } elseif (
+                            is_array($rawValue)
+                            || is_object($rawValue)
+                        ) {
+                            $displayValue = json_encode(
+                                $rawValue,
+                                JSON_PRETTY_PRINT
+                                    | JSON_UNESCAPED_UNICODE
+                            );
+                        } else {
+                            $displayValue = (string) $rawValue;
+                        }
+                    }
+
+                    return [
+                        'name' => $field,
+                        'label' => $makeLabel($field),
+                        'value' => $displayValue,
+                        'filled' => $isFilled,
+                    ];
+                })
+                ->values()
+                ->all();
+        };
+
+        $groups = [
+            [
+                'title' => 'Employee Data',
+                'description' => 'Information completed by the employee.',
+                'fields' => $makeFields($employeeFields),
+            ],
+            [
+                'title' => 'HR Data',
+                'description' => 'Employment and administrative information completed by HR.',
+                'fields' => $makeFields($hrFields),
+            ],
+        ];
+
+        return response()->json([
+            'employee_name' => $employee->display_name
+                ?: 'Employee Details',
+
+            'html' => view(
+                'components.dashboard.employee-details',
+                [
+                    'employee' => $employee,
+                    'groups' => $groups,
+                ]
+            )->render(),
         ]);
     }
 }

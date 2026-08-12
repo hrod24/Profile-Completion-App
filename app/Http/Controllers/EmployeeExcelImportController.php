@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use RuntimeException;
+use App\Support\DashboardExportWorkbook;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class EmployeeExcelImportController extends Controller
@@ -31,7 +33,7 @@ class EmployeeExcelImportController extends Controller
     }
 
     public function store(Request $request): RedirectResponse
-    {
+    {   
         $validated = $request->validate([
             'excel_file' => [
                 'required',
@@ -117,75 +119,169 @@ class EmployeeExcelImportController extends Controller
             ],
         ]);
 
-        $batchId = (string) Str::uuid();
-
+        /*
+     * Gunakan object hasil validasi.
+     */
         $file = $validated['excel_file'];
+
+        /*
+     * Tolak file hasil export dashboard sebelum file
+     * disimpan atau batch import dibuat.
+     */
+        try {
+            $isDashboardExport =
+                DashboardExportWorkbook::isDashboardExport(
+                    $file
+                );
+        } catch (Throwable $exception) {
+            report($exception);
+
+            throw ValidationException::withMessages([
+                'excel_file' => [
+                    'The Excel file could not be read. '
+                        . 'Please upload a valid employee import file.',
+                ],
+            ]);
+        }
+
+        if ($isDashboardExport) {
+            throw ValidationException::withMessages([
+                'excel_file' => [
+                    'Files downloaded from the dashboard are '
+                        . 'report-only files and cannot be uploaded '
+                        . 'through Employee Import. Please use the '
+                        . 'official employee master import file.',
+                ],
+            ]);
+        }
+
+        $batchId = (string) Str::uuid();
 
         $extension = strtolower(
             $file->getClientOriginalExtension()
         );
 
-        $path = $file->storeAs(
-            'employee-imports',
-            "{$batchId}.{$extension}"
-        );
+        $path = null;
 
-        $fullPath = Storage::path($path);
+        try {
+            /*
+         * Simpan secara eksplisit pada disk local.
+         */
+            $path = $file->storeAs(
+                'employee-imports',
+                "{$batchId}.{$extension}",
+                'local'
+            );
 
-        $reader = IOFactory::createReaderForFile(
-            $fullPath
-        );
+            if (!$path) {
+                throw new RuntimeException(
+                    'The uploaded file could not be stored.'
+                );
+            }
 
-        $worksheetInfo = $reader->listWorksheetInfo(
-            $fullPath
-        );
+            $fullPath = Storage::disk('local')->path(
+                $path
+            );
 
-        $employeeSheet = collect($worksheetInfo)
-            ->firstWhere(
+            $reader = IOFactory::createReaderForFile(
+                $fullPath
+            );
+
+            /*
+         * Hanya membaca informasi worksheet terlebih dahulu.
+         * Belum memuat seluruh isi workbook.
+         */
+            $worksheetInfo = $reader->listWorksheetInfo(
+                $fullPath
+            );
+
+            $employeeSheet = collect(
+                $worksheetInfo
+            )->firstWhere(
                 'worksheetName',
                 'Employee Details'
             );
 
-        if (!$employeeSheet) {
-            Storage::delete($path);
+            if (!$employeeSheet) {
+                throw ValidationException::withMessages([
+                    'excel_file' => [
+                        'The Employee Details sheet was not found.',
+                    ],
+                ]);
+            }
+
+            /*
+         * Konfigurasi posisi row.
+         *
+         * Gunakan nilai ini apabila:
+         * row 1 = header
+         * row 2 = employee pertama
+         */
+            $headerRows = 1;
+            $firstDataRow = 2;
+
+            $worksheetTotalRows = (int) (
+                $employeeSheet['totalRows'] ?? 0
+            );
+
+            $totalRows = max(
+                $worksheetTotalRows - $headerRows,
+                0
+            );
+
+            if ($totalRows === 0) {
+                throw ValidationException::withMessages([
+                    'excel_file' => [
+                        'The file does not contain any employee data.',
+                    ],
+                ]);
+            }
+
+            EmployeeImportBatch::query()->create([
+                'id' => $batchId,
+                'file_path' => $path,
+                'total_rows' => $totalRows,
+                'next_row' => $firstDataRow,
+                'status' => 'processing',
+            ]);
 
             return response()->json([
-                'message' =>
-                'Sheet Employee Details tidak ditemukan.',
-            ], 422);
+                'message' => 'The file was successfully received.',
+                'batch_id' => $batchId,
+                'total' => $totalRows,
+                'processed' => 0,
+            ]);
+        } catch (ValidationException $exception) {
+            /*
+         * Validation error tetap dikembalikan sebagai HTTP 422.
+         */
+            if ($path !== null) {
+                Storage::disk('local')->delete(
+                    $path
+                );
+            }
+
+            throw $exception;
+        } catch (Throwable $exception) {
+            /*
+         * Hapus file jika pembacaan workbook atau penyimpanan
+         * batch mengalami kegagalan.
+         */
+            if ($path !== null) {
+                Storage::disk('local')->delete(
+                    $path
+                );
+            }
+
+            report($exception);
+
+            throw ValidationException::withMessages([
+                'excel_file' => [
+                    'The import could not be prepared. '
+                        . 'Please check the Excel file and try again.',
+                ],
+            ]);
         }
-
-        /*
-     * Baris pertama adalah header.
-     */
-        $totalRows = max(
-            ((int) $employeeSheet['totalRows']) - 1,
-            0
-        );
-
-        if ($totalRows === 0) {
-            Storage::delete($path);
-
-            return response()->json([
-                'message' =>
-                'File tidak memiliki data employee.',
-            ], 422);
-        }
-
-        EmployeeImportBatch::query()->create([
-            'id' => $batchId,
-            'file_path' => $path,
-            'total_rows' => $totalRows,
-            'next_row' => 2,
-            'status' => 'processing',
-        ]);
-
-        return response()->json([
-            'message' => 'File berhasil diterima.',
-            'batch_id' => $batchId,
-            'total' => $totalRows,
-            'processed' => 0,
-        ]);
     }
 
     public function finishImport(

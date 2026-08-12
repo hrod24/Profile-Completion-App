@@ -19,8 +19,8 @@ class employee_details extends Model
     protected $casts = [
         'date_of_birth' => 'date',
         'date_of_join' => 'date',
-        'education_from' => 'date',
-        'education_end' => 'date',
+        'education_from' => 'string',
+        'education_end' => 'string',
         'employee_completed_at' => 'datetime',
         'active' => 'boolean',
         'inactive_at' => 'datetime',

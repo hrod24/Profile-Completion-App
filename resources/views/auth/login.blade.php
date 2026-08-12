@@ -37,7 +37,7 @@
 
                         <div>
                             <p class="text-xl font-extrabold tracking-wide">Kanmo Group</p>
-                            <p class="mt-1 text-sm text-white/75">Employee Data Completion</p>
+                            <p class="mt-1 text-sm text-white/75">Employee Profile Completion</p>
                         </div>
                     </div>
 
@@ -45,7 +45,7 @@
                         <span
                             class="inline-flex rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-bold tracking-[0.14em] text-white/90 backdrop-blur"
                         >
-                            PEOPLE PROFILE PORTAL
+                            EMPLOYEE PROFILE COMPLETION
                         </span>
 
                         <h1 class="mt-5 text-4xl font-extrabold leading-tight tracking-tight">
@@ -346,12 +346,11 @@
 
                             <p>
                                 For security, do not share your Employee ID or password with anyone.
-                                Jangan membagikan Employee ID atau password Anda.
                             </p>
                         </div>
 
                         <p class="mt-7 text-center text-[11px] text-slate-400">
-                            Kanmo Group · Employee Data Completion
+                            Kanmo Group · Employee Profile Completion
                         </p>
                     </div>
                 </div>
