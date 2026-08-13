@@ -1,6 +1,7 @@
 @props(['isEmployeeRequired' => false, 'user' => null, 'existingDocuments' => false])
 
 <form action="{{ route('employee.form.submit') }}" method="POST"
+    data-save-step-url="{{ route('employee.form.save-step') }}"
     class="mt-6 grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]" data-employee-form novalidate
     enctype="multipart/form-data">
     @csrf
@@ -58,7 +59,7 @@
         </div>
 
         {{-- STEP 1: IDENTITY --}}
-        <section class="kanmo-form-section scroll-mt-6" data-form-step data-active="true"
+        <section class="kanmo-form-section scroll-mt-6" data-form-step data-step="1" data-active="true"
             aria-labelledby="identity-title">
             <div class="kanmo-form-section-header">
                 <div class="kanmo-section-icon">
@@ -114,7 +115,7 @@
         </section>
 
         {{-- STEP 2: PERSONAL PROFILE --}}
-        <section class="kanmo-form-section scroll-mt-6" data-form-step data-active="false"
+        <section class="kanmo-form-section scroll-mt-6" data-form-step data-step="2" data-active="false"
             aria-labelledby="profile-title">
             <div class="kanmo-form-section-header">
                 <div class="kanmo-section-icon">
@@ -256,7 +257,7 @@
         </section>
 
         {{-- STEP 3: CONTACT AND ADDRESS --}}
-        <section class="kanmo-form-section scroll-mt-6" data-form-step data-active="false"
+        <section class="kanmo-form-section scroll-mt-6" data-form-step data-step="3" data-active="false"
             aria-labelledby="contact-title">
             <div class="kanmo-form-section-header">
                 <div class="kanmo-section-icon">
@@ -532,7 +533,7 @@
         </section>
 
         {{-- STEP 4: FAMILY / EDUCATION --}}
-        <section class="kanmo-form-section scroll-mt-6" data-form-step data-active="false"
+        <section class="kanmo-form-section scroll-mt-6" data-form-step data-step="4" data-active="false"
             aria-labelledby="education-title">
             <div class="kanmo-form-section-header">
                 <div class="kanmo-section-icon">
@@ -668,7 +669,7 @@
         </section>
 
         {{-- STEP 5: TAX AND CONFIRMATION --}}
-        <section class="kanmo-form-section scroll-mt-6" data-form-step data-active="false"
+        <section class="kanmo-form-section scroll-mt-6" data-form-step data-step="5" data-active="false"
             aria-labelledby="tax-title">
             <div class="kanmo-form-section-header">
                 <div class="kanmo-section-icon">
@@ -708,7 +709,7 @@
         </section>
 
         {{-- STEP 6: DOCUMENT ATTACHMENT --}}
-        <section class="kanmo-form-section scroll-mt-6" data-form-step data-active="false"
+        <section class="kanmo-form-section scroll-mt-6" data-form-step data-step="6" data-active="false"
             aria-labelledby="attachment-title">
             <div class="kanmo-form-section-header">
                 <div class="kanmo-section-icon">
@@ -874,12 +875,20 @@
                     </button>
 
                     <button type="button" class="kanmo-btn-primary" data-next-step>
-                        Next
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.8" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                        <svg class="hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"
+                            data-step-save-spinner aria-hidden="true">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                stroke-width="4"></circle>
+
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373
+               0 0 5.373 0 12h4zm2 5.291A7.962
+               7.962 0 014 12H0c0 3.042 1.135
+               5.824 3 7.938l3-2.647z"></path>
                         </svg>
+
+                        <span data-step-save-label>
+                            Save & Next
+                        </span>
                     </button>
 
                     <button type="submit" class="kanmo-btn-primary hidden" data-submit-form>

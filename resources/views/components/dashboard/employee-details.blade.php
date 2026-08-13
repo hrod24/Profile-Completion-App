@@ -330,7 +330,10 @@
 
                                         'path' => $relativePath,
 
-                                        'url' => asset('storage/' . $relativePath),
+                                        'url' =>
+                                            asset('storage/' . $relativePath) .
+                                            '?v=' .
+                                            $employee->updated_at->timestamp,
 
                                         'extension' => $extension,
 
@@ -516,8 +519,7 @@
 
                                             {{-- Field biasa --}}
                                         @else
-                                            <p
-                                                class="text-sm font-semibold text-slate-900">
+                                            <p class="text-sm font-semibold text-slate-900">
                                                 {{ $field['value'] }}
                                             </p>
                                         @endif

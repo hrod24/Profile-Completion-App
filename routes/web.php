@@ -132,6 +132,11 @@ Route::middleware([
         '/form',
         [EmployeeFormController::class, 'submit']
     )->name('employee.form.submit');
+
+    Route::post(
+        '/employee/form/save-step',
+        [EmployeeFormController::class, 'saveStep']
+    )->name('employee.form.save-step');
 });
 
 require __DIR__ . '/auth.php';

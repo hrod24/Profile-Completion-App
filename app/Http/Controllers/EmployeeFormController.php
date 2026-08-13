@@ -178,11 +178,11 @@ class EmployeeFormController extends Controller
             'religion' => [
                 Rule::in([
                     'Islam',
-                    'Kristen',
-                    'Katolik',
-                    'Hindu',
-                    'Buddha',
-                    'Konghucu',
+                    'Christianity',
+                    'Catholicism',
+                    'Hinduism',
+                    'Buddhism',
+                    'Sikhism',
                     'Other',
                 ]),
             ],
@@ -792,8 +792,405 @@ class EmployeeFormController extends Controller
             ->route('employee.form')
             ->with(
                 'success',
-            'Employee data has been successfully processed. Please leave this page or press the log out button. You can log in again later to update your data if needed.'
+                'Employee data has been successfully processed. Please leave this page or press the log out button. You can log in again later to update your data if needed.'
             );
+    }
+
+    public function saveStep(Request $request)
+    {
+        $step = (int) $request->input('step');
+
+        if ($step < 1 || $step > 5) {
+            return response()->json([
+                'message' => 'Step tidak valid.',
+            ], 422);
+        }
+
+        /*
+     * Employee harus selalu berasal dari
+     * akun yang sedang login.
+     */
+        $employee =
+            $this->authenticatedEmployee($request);
+
+        $rules =
+            $this->rulesForStep(
+                $step,
+                $employee
+            );
+
+        $validated =
+            $request->validate($rules);
+
+        /*
+     * Khusus Step 3.
+     */
+        if ($step === 3) {
+            $validated['ktp_postal_code'] =
+                $validated['current_postal_code']
+                ?? null;
+        }
+
+        $employee->update($validated);
+
+        $employee->refresh();
+
+        return response()->json([
+            'success' => true,
+
+            'message' =>
+            "Step {$step} berhasil disimpan.",
+
+            'step' =>
+            $step,
+
+            'completion' =>
+            $employee->profile_completion,
+        ]);
+    }
+
+    private function rulesForStep(
+        int $step,
+        employee_details $employee
+    ): array {
+        return match ($step) {
+            1 => $this->stepOneRules(),
+
+            2 => $this->stepTwoRules(),
+
+            3 => $this->stepThreeRules(),
+
+            4 => $this->stepFourRules(),
+
+            5 => $this->stepFiveRules(),
+
+            6 => $this->stepSixRules(
+                $employee
+            ),
+
+            default => [],
+        };
+    }
+
+    private function stepOneRules(): array
+    {
+        return [
+            'ktp_number' => [
+                'required',
+                'string',
+                'max:16 ',
+            ],
+        ];
+    }
+
+    private function stepTwoRules(): array
+    {
+        return [
+
+            'display_name' => [
+                'required',
+                'string',
+                'max:100',
+            ],
+
+            'gender' => [
+                'required',
+                Rule::in([
+                    'Male',
+                    'Female',
+                ]),
+            ],
+
+            'birth_place' => [
+                'required',
+                'string',
+                'max:100',
+            ],
+
+            'date_of_birth' => [
+                'required',
+                'date',
+            ],
+
+            'religion' => [
+                'required',
+                'string',
+                'max:50',
+            ],
+
+            'marital_status' => [
+                'required',
+                'string',
+                'max:50',
+            ],
+
+            'blood_group' => [
+                'nullable',
+                'string',
+                'max:10',
+            ],
+
+            'nationality' => [
+                'required',
+                'string',
+                'max:50',
+            ],
+        ];
+    }
+
+    private function stepThreeRules(): array
+    {
+        return [
+
+            'primary_email' => [
+                'required',
+                'email',
+                'max:191',
+            ],
+
+            'primary_contact_number' => [
+                'required',
+                'string',
+                'max:30',
+                'regex:/^[0-9+\-\s()]+$/',
+            ],
+
+            'emergency_full_name' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'emergency_contact_no' => [
+                'nullable',
+                'regex:/^[0-9+\-\s()]+$/',
+                'string',
+                'max:30',
+            ],
+
+            'current_address' => [
+                'required',
+                'string',
+            ],
+
+            'current_provinsi' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'current_kotamadya_kabupaten' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'current_kecamatan' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'current_kelurahan' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'current_postal_code' => [
+                'nullable',
+                'string',
+                'digits:5',
+            ],
+
+            'ktp_address' => [
+                'nullable',
+                'string',
+            ],
+
+            'ktp_provinsi' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'ktp_kotamadya_kabupaten' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'ktp_kecamatan' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'ktp_kelurahan' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+        ];
+    }
+
+    private function stepFourRules(): array
+    {
+        return [
+
+            'mother_full_name' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'education_level' => [
+                'nullable',
+                'string',
+                'max:30',
+            ],
+
+            'major' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'institution_name' => [
+                'nullable',
+                'string',
+                'max:150',
+            ],
+
+            /*
+         * education_from / education_end hanya menyimpan TAHUN.
+         */
+            'education_from' => [
+                'nullable',
+                'integer',
+                'digits:4',
+                'between:1800,2100',
+            ],
+
+            'education_end' => [
+                'nullable',
+                'integer',
+                'digits:4',
+                'between:1800,2100',
+                'gte:education_from',
+            ],
+        ];
+    }
+
+    private function stepFiveRules(): array
+    {
+        return [
+
+            'tax_number' => [
+                'nullable',
+                'string',
+                'max:30',
+                'regex:/^[0-9.\-]+$/',
+            ],
+        ];
+    }
+
+    private function stepSixRules(
+        employee_details $employee
+    ): array {
+        $rules = [
+            'employee_id' => [
+                'required',
+                'string',
+                'exists:employee_details,employee_id',
+            ],
+        ];
+
+        $fileFields = [
+            'ijazah_filename',
+            'ktp_filename',
+            'kk_filename',
+            'npwp_filename',
+        ];
+
+        $employeeRequiredFields =
+            config(
+                'employee.employee_required_fields',
+                []
+            );
+
+        foreach ($fileFields as $field) {
+            $isRequired = in_array(
+                $field,
+                $employeeRequiredFields,
+                true
+            );
+
+            $hasExistingFile =
+                filled($employee->{$field});
+
+            $rules[$field] = [
+                Rule::requiredIf(
+                    $isRequired &&
+                        !$hasExistingFile
+                ),
+
+                'nullable',
+                'file',
+                'mimes:pdf,jpg,jpeg,png',
+                'max:5120',
+            ];
+        }
+
+        return $rules;
+    }
+
+    private function storeDocuments(
+        Request $request,
+        employee_details $employee,
+        array $validated
+    ): array {
+        $fileFields = [
+            'ijazah_filename' => 'ijazah',
+            'ktp_filename' => 'ktp',
+            'kk_filename' => 'kk',
+            'npwp_filename' => 'npwp',
+        ];
+
+        foreach (
+            $fileFields as $field => $prefix
+        ) {
+            if (!$request->hasFile($field)) {
+                /*
+             * Jangan overwrite file lama dengan NULL.
+             */
+                unset($validated[$field]);
+
+                continue;
+            }
+
+            $file =
+                $request->file($field);
+
+            $extension =
+                strtolower(
+                    $file->getClientOriginalExtension()
+                );
+
+            $filename =
+                "{$prefix}_{$employee->employee_id}.{$extension}";
+
+            $path = $file->storeAs(
+                'employee-documents',
+                $filename,
+                'public'
+            );
+
+            $validated[$field] =
+                $path;
+        }
+
+        return $validated;
     }
 
     private function authenticatedEmployee(

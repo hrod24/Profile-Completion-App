@@ -212,18 +212,307 @@ function initEmployeeForm() {
         return true;
     };
 
-    nextButton?.addEventListener("click", () => {
-        if (validateCurrentStep()) showStep(currentStep + 1, true);
+    const saveStepUrl =
+    form.dataset.saveStepUrl;
+
+    let isSavingStep = false;
+
+    const createStepFormData = () => {
+    const panel =
+        panels[currentStep];
+
+    const formData =
+        new FormData();
+
+    /*
+     * CSRF token.
+     */
+    const csrfToken =
+        form.querySelector(
+            'input[name="_token"]'
+        );
+
+    if (csrfToken) {
+        formData.append(
+            "_token",
+            csrfToken.value
+        );
+    }
+
+    /*
+     * Kirim nomor step.
+     */
+    formData.append(
+        "step",
+        String(currentStep + 1)
+    );
+
+    /*
+     * Masukkan hanya input pada step aktif.
+     */
+    const fields =
+        panel.querySelectorAll(
+            "input, select, textarea"
+        );
+
+    fields.forEach((field) => {
+        if (
+            !field.name ||
+            field.disabled ||
+            field.name === "_token" ||
+            field.name === "employee_id"
+        ) {
+            return;
+        }
+
+        /*
+         * File.
+         */
+        if (field.type === "file") {
+            const files =
+                field.files;
+
+            if (
+                files &&
+                files.length > 0
+            ) {
+                formData.append(
+                    field.name,
+                    files[0]
+                );
+            }
+
+            return;
+        }
+
+        /*
+         * Checkbox / radio.
+         */
+        if (
+            (
+                field.type === "checkbox" ||
+                field.type === "radio"
+            ) &&
+            !field.checked
+        ) {
+            return;
+        }
+
+        formData.append(
+            field.name,
+            field.value
+        );
     });
+
+    return formData;
+};
+
+const saveCurrentStep =
+    async () => {
+        if (
+            isSavingStep ||
+            !saveStepUrl
+        ) {
+            return false;
+        }
+
+        if (!validateCurrentStep()) {
+            return false;
+        }
+
+        isSavingStep = true;
+
+        const label =
+            nextButton?.querySelector(
+                "[data-step-save-label]"
+            );
+
+        const spinner =
+            nextButton?.querySelector(
+                "[data-step-save-spinner]"
+            );
+
+        if (nextButton) {
+            nextButton.disabled = true;
+        }
+
+        if (label) {
+            label.textContent =
+                "Saving...";
+        }
+
+        spinner?.classList.remove(
+            "hidden"
+        );
+
+        try {
+            const response =
+                await fetch(
+                    saveStepUrl,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            Accept:
+                                "application/json",
+
+                            "X-Requested-With":
+                                "XMLHttpRequest",
+                        },
+
+                        body:
+                            createStepFormData(),
+                    }
+                );
+
+            /*
+             * Laravel validation error.
+             */
+            if (response.status === 422) {
+                const data =
+                    await response.json();
+
+                const errors =
+                    data.errors ?? {};
+
+                const firstFieldName =
+                    Object.keys(errors)[0];
+
+                if (firstFieldName) {
+                    const field =
+                        form.querySelector(
+                            `[name="${CSS.escape(firstFieldName)}"]`
+                        );
+
+                    field?.focus();
+
+                    field?.setCustomValidity(
+                        errors[firstFieldName][0]
+                    );
+
+                    field?.reportValidity();
+
+                    /*
+                     * Bersihkan lagi supaya user bisa memperbaiki.
+                     */
+                    field?.setCustomValidity("");
+                }
+
+                return false;
+            }
+
+            if (!response.ok) {
+                throw new Error(
+                    `HTTP ${response.status}`
+                );
+            }
+
+            const data =
+                await response.json();
+
+            /*
+             * Tandai step sebagai sudah tersimpan.
+             */
+            panels[currentStep].dataset.saved =
+                "true";
+
+            return true;
+        } catch (error) {
+            console.error(
+                "Gagal menyimpan step:",
+                error
+            );
+
+            alert(
+                "Data belum berhasil disimpan. Silakan coba kembali."
+            );
+
+            return false;
+        } finally {
+            isSavingStep = false;
+
+            if (nextButton) {
+                nextButton.disabled = false;
+            }
+
+            if (label) {
+                label.textContent =
+                    "Save & Next";
+            }
+
+            spinner?.classList.add(
+                "hidden"
+            );
+        }
+    };
+
+    nextButton?.addEventListener(
+        "click",
+        async () => {
+            const saved =
+                await saveCurrentStep();
+
+            if (!saved) {
+                return;
+            }
+
+            showStep(
+                currentStep + 1,
+                true
+            );
+        }
+    );
 
     previousButton?.addEventListener("click", () => showStep(currentStep - 1, true));
 
-    stepButtons.forEach((button, targetStep) => {
-        button.addEventListener("click", () => {
-            if (targetStep > currentStep && !validateCurrentStep()) return;
-            showStep(targetStep, true);
-        });
-    });
+    stepButtons.forEach(
+        (button, targetStep) => {
+            button.addEventListener(
+                "click",
+                async () => {
+                    /*
+                    * Mundur ke step sebelumnya boleh langsung.
+                    */
+                    if (
+                        targetStep <
+                        currentStep
+                    ) {
+                        showStep(
+                            targetStep,
+                            true
+                        );
+
+                        return;
+                    }
+
+                    /*
+                    * Klik step yang sama.
+                    */
+                    if (
+                        targetStep ===
+                        currentStep
+                    ) {
+                        return;
+                    }
+
+                    /*
+                    * Sebelum maju, simpan step aktif.
+                    */
+                    const saved =
+                        await saveCurrentStep();
+
+                    if (!saved) {
+                        return;
+                    }
+
+                    showStep(
+                        targetStep,
+                        true
+                    );
+                }
+            );
+        }
+    );
 
     getRequiredNormalFields().forEach((field) => {
         ["input", "change"].forEach((eventName) => {
