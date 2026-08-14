@@ -5,14 +5,24 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    /*
+     * ============================================================
+     * ELEMENTS
+     * ============================================================
+     */
+
     const endpoint = page.dataset.endpoint;
-    const searchInput = document.getElementById('pic-employee-search');
-    const companyCheckboxes = document.querySelectorAll(
-        '.company-filter-checkbox'
+
+    const searchInput = document.getElementById(
+        'pic-employee-search'
     );
 
     const clearCompanyButton = document.getElementById(
         'clear-company-filters'
+    );
+
+    const clearSourceButton = document.getElementById(
+        'clear-source-filters'
     );
 
     const clearSelectionButton = document.getElementById(
@@ -47,58 +57,198 @@ document.addEventListener('DOMContentLoaded', () => {
         'selected-employee-inputs'
     );
 
+    const searchStatus = document.getElementById(
+        'set-pic-search-status'
+    );
+
     /*
-     * Selection disimpan dalam Set agar pilihan tidak hilang
-     * ketika search, filter, atau pagination berubah.
+     * Pastikan elemen utama tersedia.
+     */
+    if (
+        !endpoint ||
+        !searchInput ||
+        !tableContainer ||
+        !selectedInputsContainer
+    ) {
+        return;
+    }
+
+    /*
+     * ============================================================
+     * STATE
+     * ============================================================
+     */
+
+    /*
+     * Menyimpan employee yang dipilih.
+     *
+     * Selection tetap tersimpan walaupun:
+     * - search berubah;
+     * - company filter berubah;
+     * - source filter berubah;
+     * - pagination berubah.
      */
     const selectedEmployeeIds = new Set();
 
     let searchTimer = null;
+
+    /*
+     * Digunakan untuk membatalkan AJAX sebelumnya
+     * ketika user melakukan search/filter dengan cepat.
+     */
     let activeRequest = null;
 
-    const getSelectedCompanies = () => {
-        return Array.from(companyCheckboxes)
-            .filter((checkbox) => checkbox.checked)
-            .map((checkbox) => checkbox.value);
+    /*
+     * ============================================================
+     * FILTER HELPERS
+     * ============================================================
+     */
+
+    const getCompanyCheckboxes = () => {
+        return Array.from(
+            document.querySelectorAll(
+                '.company-filter-checkbox'
+            )
+        );
     };
 
-    const buildRequestUrl = () => {
-        const url = new URL(endpoint, window.location.origin);
+    const getSourceCheckboxes = () => {
+        return Array.from(
+            document.querySelectorAll(
+                '.source-filter-checkbox'
+            )
+        );
+    };
 
+    /*
+     * Company yang sedang dipilih.
+     */
+    const getSelectedCompanies = () => {
+        return getCompanyCheckboxes()
+            .filter(
+                (checkbox) => checkbox.checked
+            )
+            .map(
+                (checkbox) => checkbox.value
+            );
+    };
+
+    /*
+     * Source yang sedang dipilih.
+     */
+    const getSelectedSources = () => {
+        return getSourceCheckboxes()
+            .filter(
+                (checkbox) => checkbox.checked
+            )
+            .map(
+                (checkbox) => checkbox.value
+            );
+    };
+
+    /*
+     * ============================================================
+     * URL BUILDER
+     * ============================================================
+     */
+
+    const buildRequestUrl = () => {
+        const url = new URL(
+            endpoint,
+            window.location.origin
+        );
+
+        /*
+         * Search.
+         */
         const search = searchInput.value.trim();
 
         if (search !== '') {
-            url.searchParams.set('search', search);
+            url.searchParams.set(
+                'search',
+                search
+            );
         }
 
-        getSelectedCompanies().forEach((company) => {
-            url.searchParams.append('companies[]', company);
-        });
+        /*
+         * Company filter.
+         */
+        getSelectedCompanies().forEach(
+            (company) => {
+                url.searchParams.append(
+                    'companies[]',
+                    company
+                );
+            }
+        );
+
+        /*
+         * Source filter.
+         */
+        getSelectedSources().forEach(
+            (source) => {
+                url.searchParams.append(
+                    'sources[]',
+                    source
+                );
+            }
+        );
 
         return url.toString();
     };
 
+    /*
+     * ============================================================
+     * SELECTED EMPLOYEE
+     * ============================================================
+     */
+
     const syncHiddenInputs = () => {
         selectedInputsContainer.innerHTML = '';
 
-        selectedEmployeeIds.forEach((employeeId) => {
-            const input = document.createElement('input');
+        selectedEmployeeIds.forEach(
+            (employeeId) => {
+                const input =
+                    document.createElement(
+                        'input'
+                    );
 
-            input.type = 'hidden';
-            input.name = 'employee_ids[]';
-            input.value = employeeId;
+                input.type = 'hidden';
 
-            selectedInputsContainer.appendChild(input);
-        });
+                input.name =
+                    'employee_ids[]';
 
-        selectedCount.textContent = selectedEmployeeIds.size;
-        assignButton.disabled = selectedEmployeeIds.size === 0;
+                input.value =
+                    employeeId;
+
+                selectedInputsContainer.appendChild(
+                    input
+                );
+            }
+        );
+
+        if (selectedCount) {
+            selectedCount.textContent =
+                selectedEmployeeIds.size;
+        }
+
+        if (assignButton) {
+            assignButton.disabled =
+                selectedEmployeeIds.size === 0;
+        }
     };
 
+    /*
+     * ============================================================
+     * SELECT ALL STATE
+     * ============================================================
+     */
+
     const updateSelectAllState = () => {
-        const selectAll = document.getElementById(
-            'select-all-employees'
-        );
+        const selectAll =
+            document.getElementById(
+                'select-all-employees'
+            );
 
         if (!selectAll) {
             return;
@@ -110,193 +260,566 @@ document.addEventListener('DOMContentLoaded', () => {
             )
         );
 
-        const selectedOnPage = rowCheckboxes.filter(
-            (checkbox) => checkbox.checked
-        ).length;
+        /*
+         * Tidak ada employee pada halaman.
+         */
+        if (rowCheckboxes.length === 0) {
+            selectAll.checked = false;
+            selectAll.indeterminate = false;
 
-        selectAll.checked =
-            rowCheckboxes.length > 0 &&
-            selectedOnPage === rowCheckboxes.length;
+            return;
+        }
 
-        selectAll.indeterminate =
-            selectedOnPage > 0 &&
-            selectedOnPage < rowCheckboxes.length;
-    };
-
-    const bindTableEvents = () => {
-        const rowCheckboxes = tableContainer.querySelectorAll(
-            '.employee-checkbox'
-        );
-
-        rowCheckboxes.forEach((checkbox) => {
-            const employeeId = checkbox.dataset.employeeId;
-
-            checkbox.checked = selectedEmployeeIds.has(
-                employeeId
-            );
-
-            checkbox.addEventListener('change', () => {
-                if (checkbox.checked) {
-                    selectedEmployeeIds.add(employeeId);
-                } else {
-                    selectedEmployeeIds.delete(employeeId);
-                }
-
-                syncHiddenInputs();
-                updateSelectAllState();
-            });
-        });
-
-        const selectAll = document.getElementById(
-            'select-all-employees'
-        );
-
-        selectAll?.addEventListener('change', () => {
-            rowCheckboxes.forEach((checkbox) => {
-                const employeeId =
-                    checkbox.dataset.employeeId;
-
-                checkbox.checked = selectAll.checked;
-
-                if (selectAll.checked) {
-                    selectedEmployeeIds.add(employeeId);
-                } else {
-                    selectedEmployeeIds.delete(employeeId);
-                }
-            });
-
-            syncHiddenInputs();
-            updateSelectAllState();
-        });
+        const selectedOnPage =
+            rowCheckboxes.filter(
+                (checkbox) =>
+                    checkbox.checked
+            ).length;
 
         /*
-         * Pagination tetap dilakukan melalui AJAX.
+         * Semua employee di halaman dipilih.
          */
-        tableContainer
-            .querySelectorAll('a[href]')
-            .forEach((link) => {
-                link.addEventListener('click', (event) => {
-                    const url = new URL(link.href);
+        selectAll.checked =
+            selectedOnPage ===
+            rowCheckboxes.length;
 
-                    if (!url.searchParams.has('page')) {
-                        return;
+        /*
+         * Hanya sebagian employee dipilih.
+         */
+        selectAll.indeterminate =
+            selectedOnPage > 0 &&
+            selectedOnPage <
+                rowCheckboxes.length;
+    };
+
+    /*
+     * ============================================================
+     * TABLE EVENTS
+     * ============================================================
+     */
+
+    const bindTableEvents = () => {
+        const rowCheckboxes =
+            tableContainer.querySelectorAll(
+                '.employee-checkbox'
+            );
+
+        /*
+         * Employee checkbox.
+         */
+        rowCheckboxes.forEach(
+            (checkbox) => {
+                const employeeId =
+                    String(
+                        checkbox.dataset
+                            .employeeId ?? ''
+                    );
+
+                if (employeeId === '') {
+                    return;
+                }
+
+                /*
+                 * Pulihkan status checkbox dari Set.
+                 */
+                checkbox.checked =
+                    selectedEmployeeIds.has(
+                        employeeId
+                    );
+
+                checkbox.addEventListener(
+                    'change',
+                    () => {
+                        if (
+                            checkbox.checked
+                        ) {
+                            selectedEmployeeIds.add(
+                                employeeId
+                            );
+                        } else {
+                            selectedEmployeeIds.delete(
+                                employeeId
+                            );
+                        }
+
+                        syncHiddenInputs();
+
+                        updateSelectAllState();
                     }
+                );
+            }
+        );
 
-                    event.preventDefault();
-                    loadEmployees(link.href);
-                });
+        /*
+         * Select All.
+         *
+         * Hanya memilih employee yang ada
+         * pada halaman pagination saat ini.
+         */
+        const selectAll =
+            document.getElementById(
+                'select-all-employees'
+            );
+
+        selectAll?.addEventListener(
+            'change',
+            () => {
+                rowCheckboxes.forEach(
+                    (checkbox) => {
+                        const employeeId =
+                            String(
+                                checkbox.dataset
+                                    .employeeId ?? ''
+                            );
+
+                        if (
+                            employeeId === ''
+                        ) {
+                            return;
+                        }
+
+                        checkbox.checked =
+                            selectAll.checked;
+
+                        if (
+                            selectAll.checked
+                        ) {
+                            selectedEmployeeIds.add(
+                                employeeId
+                            );
+                        } else {
+                            selectedEmployeeIds.delete(
+                                employeeId
+                            );
+                        }
+                    }
+                );
+
+                syncHiddenInputs();
+
+                updateSelectAllState();
+            }
+        );
+
+        /*
+         * ========================================================
+         * AJAX PAGINATION
+         * ========================================================
+         */
+
+        tableContainer
+            .querySelectorAll(
+                'a[href]'
+            )
+            .forEach((link) => {
+                link.addEventListener(
+                    'click',
+                    (event) => {
+                        const url =
+                            new URL(
+                                link.href,
+                                window.location
+                                    .origin
+                            );
+
+                        /*
+                         * Hanya interception link pagination.
+                         */
+                        if (
+                            !url.searchParams.has(
+                                'page'
+                            )
+                        ) {
+                            return;
+                        }
+
+                        event.preventDefault();
+
+                        loadEmployees(
+                            url.toString()
+                        );
+                    }
+                );
             });
 
         updateSelectAllState();
     };
 
-    const loadEmployees = async (requestedUrl = null) => {
-        const url = requestedUrl ?? buildRequestUrl();
+    /*
+     * ============================================================
+     * AJAX LOAD
+     * ============================================================
+     */
+
+    const loadEmployees = async (
+        requestedUrl = null
+    ) => {
+        const url =
+            requestedUrl ??
+            buildRequestUrl();
 
         /*
-         * Batalkan request sebelumnya ketika user mengetik cepat.
+         * Simpan filter ke browser URL langsung.
+         *
+         * Jadi ketika:
+         *
+         * Company A dicentang:
+         * ?companies[]=Company+A
+         *
+         * Source HEAD OFFICE dicentang:
+         * ?sources[]=HEAD+OFFICE
+         */
+        window.history.replaceState(
+            {},
+            '',
+            url
+        );
+
+        /*
+         * Batalkan request sebelumnya.
          */
         if (activeRequest) {
             activeRequest.abort();
         }
 
-        activeRequest = new AbortController();
+        const controller =
+            new AbortController();
 
-        loadingIndicator.classList.remove('hidden');
-        loadingIndicator.classList.add('flex');
+        activeRequest =
+            controller;
 
-        tableContainer.setAttribute('aria-busy', 'true');
-        tableContainer.classList.add('opacity-50');
+        /*
+         * Loading UI.
+         */
+        loadingIndicator?.classList.remove(
+            'hidden'
+        );
+
+        loadingIndicator?.classList.add(
+            'flex'
+        );
+
+        tableContainer.setAttribute(
+            'aria-busy',
+            'true'
+        );
+
+        tableContainer.classList.add(
+            'opacity-50'
+        );
+
+        if (searchStatus) {
+            searchStatus.textContent =
+                'Loading employee data.';
+        }
 
         try {
-            const response = await fetch(url, {
-                headers: {
-                    Accept: 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                signal: activeRequest.signal,
-            });
+            const response = await fetch(
+                url,
+                {
+                    method: 'GET',
+
+                    headers: {
+                        Accept:
+                            'application/json',
+
+                        'X-Requested-With':
+                            'XMLHttpRequest',
+                    },
+
+                    signal:
+                        controller.signal,
+                }
+            );
 
             if (!response.ok) {
                 throw new Error(
-                    'Gagal mengambil data employee.'
+                    `Failed to load employees. HTTP ${response.status}`
                 );
             }
 
-            const data = await response.json();
+            const data =
+                await response.json();
 
-            tableContainer.innerHTML = data.html;
-            resultCount.textContent = data.total;
+            /*
+             * Abaikan response lama jika request
+             * lain sudah dibuat setelah request ini.
+             */
+            if (
+                activeRequest !==
+                controller
+            ) {
+                return;
+            }
 
+            /*
+             * Update table.
+             */
+            tableContainer.innerHTML =
+                data.html;
+
+            /*
+             * Update total employee.
+             */
+            if (resultCount) {
+                resultCount.textContent =
+                    Number(
+                        data.total ?? 0
+                    ).toLocaleString();
+            }
+
+            /*
+             * Karena table HTML diganti,
+             * event checkbox/pagination harus
+             * dipasang kembali.
+             */
             bindTableEvents();
 
             /*
-             * Simpan filter pada URL browser.
+             * Sinkronkan hidden input.
              */
-            window.history.replaceState(
-                {},
-                '',
-                url
-            );
+            syncHiddenInputs();
+
+            if (searchStatus) {
+                searchStatus.textContent =
+                    `${data.total ?? 0} employee found.`;
+            }
         } catch (error) {
-            if (error.name !== 'AbortError') {
-                console.error(error);
-                alert(
-                    'Data employee gagal dimuat. Silakan coba kembali.'
+            /*
+             * AbortError adalah normal ketika
+             * request sebelumnya dibatalkan.
+             */
+            if (
+                error.name ===
+                'AbortError'
+            ) {
+                return;
+            }
+
+            console.error(
+                'Set PIC employee request failed:',
+                error
+            );
+
+            if (searchStatus) {
+                searchStatus.textContent =
+                    'Employee data failed to load.';
+            }
+
+            alert(
+                'Data employee gagal dimuat. '
+                + 'Silakan coba kembali.'
+            );
+        } finally {
+            /*
+             * Hanya request paling baru yang boleh
+             * mematikan loading indicator.
+             */
+            if (
+                activeRequest ===
+                controller
+            ) {
+                activeRequest = null;
+
+                loadingIndicator?.classList.add(
+                    'hidden'
+                );
+
+                loadingIndicator?.classList.remove(
+                    'flex'
+                );
+
+                tableContainer.setAttribute(
+                    'aria-busy',
+                    'false'
+                );
+
+                tableContainer.classList.remove(
+                    'opacity-50'
                 );
             }
-        } finally {
-            loadingIndicator.classList.add('hidden');
-            loadingIndicator.classList.remove('flex');
-
-            tableContainer.setAttribute('aria-busy', 'false');
-            tableContainer.classList.remove('opacity-50');
         }
     };
 
-    searchInput.addEventListener('input', () => {
-        window.clearTimeout(searchTimer);
+    /*
+     * ============================================================
+     * SEARCH
+     * ============================================================
+     */
 
-        searchTimer = window.setTimeout(() => {
-            loadEmployees();
-        }, 350);
-    });
+    searchInput.addEventListener(
+        'input',
+        () => {
+            window.clearTimeout(
+                searchTimer
+            );
 
-    companyCheckboxes.forEach((checkbox) => {
-        checkbox.addEventListener('change', () => {
-            loadEmployees();
-        });
-    });
-
-    clearCompanyButton.addEventListener('click', () => {
-        companyCheckboxes.forEach((checkbox) => {
-            checkbox.checked = false;
-        });
-
-        loadEmployees();
-    });
-
-    clearSelectionButton.addEventListener('click', () => {
-        selectedEmployeeIds.clear();
-
-        tableContainer
-            .querySelectorAll('.employee-checkbox')
-            .forEach((checkbox) => {
-                checkbox.checked = false;
-            });
-
-        syncHiddenInputs();
-        updateSelectAllState();
-    });
-
-    assignForm.addEventListener('submit', (event) => {
-        if (selectedEmployeeIds.size === 0) {
-            event.preventDefault();
-
-            alert('Pilih minimal satu employee.');
+            searchTimer =
+                window.setTimeout(
+                    () => {
+                        /*
+                         * buildRequestUrl()
+                         * tidak memiliki page,
+                         * sehingga search baru
+                         * kembali ke page pertama.
+                         */
+                        loadEmployees();
+                    },
+                    350
+                );
         }
-    });
+    );
+
+    /*
+     * ============================================================
+     * COMPANY FILTER
+     * ============================================================
+     */
+
+    getCompanyCheckboxes().forEach(
+        (checkbox) => {
+            checkbox.addEventListener(
+                'change',
+                () => {
+                    /*
+                     * Filter baru selalu kembali
+                     * ke page pertama.
+                     */
+                    loadEmployees();
+                }
+            );
+        }
+    );
+
+    /*
+     * ============================================================
+     * SOURCE FILTER
+     * ============================================================
+     */
+
+    getSourceCheckboxes().forEach(
+        (checkbox) => {
+            checkbox.addEventListener(
+                'change',
+                () => {
+                    /*
+                     * Filter baru selalu kembali
+                     * ke page pertama.
+                     */
+                    loadEmployees();
+                }
+            );
+        }
+    );
+
+    /*
+     * ============================================================
+     * CLEAR COMPANY FILTER
+     * ============================================================
+     */
+
+    clearCompanyButton?.addEventListener(
+        'click',
+        () => {
+            getCompanyCheckboxes().forEach(
+                (checkbox) => {
+                    checkbox.checked =
+                        false;
+                }
+            );
+
+            loadEmployees();
+        }
+    );
+
+    /*
+     * ============================================================
+     * CLEAR SOURCE FILTER
+     * ============================================================
+     */
+
+    clearSourceButton?.addEventListener(
+        'click',
+        () => {
+            getSourceCheckboxes().forEach(
+                (checkbox) => {
+                    checkbox.checked =
+                        false;
+                }
+            );
+
+            loadEmployees();
+        }
+    );
+
+    /*
+     * ============================================================
+     * CLEAR EMPLOYEE SELECTION
+     * ============================================================
+     */
+
+    clearSelectionButton?.addEventListener(
+        'click',
+        () => {
+            selectedEmployeeIds.clear();
+
+            tableContainer
+                .querySelectorAll(
+                    '.employee-checkbox'
+                )
+                .forEach(
+                    (checkbox) => {
+                        checkbox.checked =
+                            false;
+                    }
+                );
+
+            syncHiddenInputs();
+
+            updateSelectAllState();
+        }
+    );
+
+    /*
+     * ============================================================
+     * ASSIGN PIC FORM
+     * ============================================================
+     */
+
+    assignForm?.addEventListener(
+        'submit',
+        (event) => {
+            /*
+             * Employee wajib dipilih.
+             */
+            if (
+                selectedEmployeeIds.size ===
+                0
+            ) {
+                event.preventDefault();
+
+                alert(
+                    'Pilih minimal satu employee.'
+                );
+
+                return;
+            }
+
+            /*
+             * Pastikan hidden input terbaru
+             * sudah masuk ke form sebelum submit.
+             */
+            syncHiddenInputs();
+        }
+    );
+
+    /*
+     * ============================================================
+     * INITIALIZE
+     * ============================================================
+     */
 
     syncHiddenInputs();
+
     bindTableEvents();
 });

@@ -33,7 +33,7 @@ class EmployeeExcelImportController extends Controller
     }
 
     public function store(Request $request): RedirectResponse
-    {   
+    {
         $validated = $request->validate([
             'excel_file' => [
                 'required',

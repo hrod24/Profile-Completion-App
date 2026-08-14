@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\employee_details;
 use App\Models\Pic;
+use App\Models\Source;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -21,9 +22,30 @@ class SetPicController extends Controller
         );
 
         $selectedCompanies = collect(
-            Arr::wrap($request->query('companies', []))
+            Arr::wrap(
+                $request->query('companies', [])
+            )
         )
-            ->map(fn($company) => trim((string) $company))
+            ->map(
+                fn($company) => trim(
+                    (string) $company
+                )
+            )
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $selectedSources = collect(
+            Arr::wrap(
+                $request->query('sources', [])
+            )
+        )
+            ->map(
+                fn($source) => trim(
+                    (string) $source
+                )
+            )
             ->filter()
             ->unique()
             ->values()
@@ -33,15 +55,17 @@ class SetPicController extends Controller
             ->select([
                 'id',
                 'employee_id',
+                'employee_level_code',
                 'display_name',
                 'company',
                 'pic_nip',
             ])
-            ->whereNull('pic_nip');
+            ->whereNull('pic_nip')
+            ->where('active', 1);
 
         /*
-         * Live search berdasarkan NIP atau nama.
-         */
+     * Live search berdasarkan NIP atau nama.
+     */
         if ($search !== '') {
             $employeeQuery->where(
                 function ($query) use ($search) {
@@ -61,8 +85,8 @@ class SetPicController extends Controller
         }
 
         /*
-         * Filter satu atau beberapa company.
-         */
+     * Filter company.
+     */
         if (!empty($selectedCompanies)) {
             $employeeQuery->whereIn(
                 'company',
@@ -70,15 +94,29 @@ class SetPicController extends Controller
             );
         }
 
+        /*
+     * Filter source.
+     */
+        if (!empty($selectedSources)) {
+            $employeeQuery->whereHas(
+                'sourceData',
+                function ($query) use (
+                    $selectedSources
+                ) {
+                    $query->whereIn(
+                        'source',
+                        $selectedSources
+                    );
+                }
+            );
+        }
+
         $employees = $employeeQuery
             ->orderBy('display_name')
             ->orderBy('employee_id')
-            ->paginate(10)
+            ->paginate(1000)
             ->withQueryString();
 
-        /*
-         * Request AJAX hanya mengembalikan isi tabel.
-         */
         if ($request->ajax()) {
             return response()->json([
                 'html' => view(
@@ -91,8 +129,8 @@ class SetPicController extends Controller
         }
 
         /*
-         * Daftar PIC yang dapat dipilih.
-         */
+     * PIC list.
+     */
         $pics = Pic::query()
             ->orderBy('name')
             ->orderBy('nip')
@@ -102,24 +140,46 @@ class SetPicController extends Controller
             ]);
 
         /*
-         * Company yang ditampilkan hanya berasal dari employee
-         * yang belum memiliki PIC.
-         */
+     * Company yang tersedia untuk employee
+     * aktif yang belum mempunyai PIC.
+     */
         $companies = employee_details::query()
             ->whereNull('pic_nip')
+            ->where('active', 1)
             ->whereNotNull('company')
             ->where('company', '!=', '')
             ->distinct()
             ->orderBy('company')
             ->pluck('company');
 
+        /*
+     * Source yang tersedia untuk employee
+     * aktif yang belum mempunyai PIC.
+     */
+        $sources = Source::query()
+            ->whereNotNull('source')
+            ->where('source', '!=', '')
+            ->whereHas(
+                'employees',
+                function ($query) {
+                    $query
+                        ->whereNull('pic_nip')
+                        ->where('active', 1);
+                }
+            )
+            ->distinct()
+            ->orderBy('source')
+            ->pluck('source');
+
         return view('pages.set-pic', [
             'title' => 'Set PIC',
             'employees' => $employees,
             'pics' => $pics,
             'companies' => $companies,
+            'sources' => $sources,
             'search' => $search,
             'selectedCompanies' => $selectedCompanies,
+            'selectedSources' => $selectedSources,
         ]);
     }
 
