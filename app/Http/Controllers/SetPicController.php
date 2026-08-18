@@ -349,7 +349,7 @@ class SetPicController extends Controller
                 'required',
                 'file',
                 'mimes:xlsx,xls',
-                'max:10240',
+                'max:10240', 
             ],
         ]);
 
