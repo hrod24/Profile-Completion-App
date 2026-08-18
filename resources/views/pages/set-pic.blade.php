@@ -48,7 +48,7 @@
                     </p>
                 </div>
 
-                <div class="p-5">
+                <div class="p-5 flex gap-4">
                     {{-- Search --}}
                     <div class="max-w-xl">
                         <label for="pic-employee-search" class="mb-2 block text-xs font-bold text-slate-600">
@@ -86,128 +86,162 @@
                                 </svg>
                             </div>
                         </div>
+
                     </div>
 
-                    {{-- Company filters --}}
-                    <div class="mt-5 border-t border-slate-200 pt-5">
-                        <div
-                            class="mb-3 flex flex-col gap-2
-                                   sm:flex-row sm:items-center
-                                   sm:justify-between">
-                            <div>
-                                <p class="text-xs font-bold text-slate-600">
-                                    Company
-                                </p>
+                    <div class="filters flex gap-2 pt-5 sm:flex-row sm:items-center sm:gap-3">
+                        {{-- COMPANY FILTER --}}
+                        <div class="relative">
+                            <button id="set-pic-company-filter-button"
+                                data-dropdown-toggle="set-pic-company-filter-dropdown" type="button"
+                                class="kanmo-btn-primary">
+                                <span id="set-pic-company-filter-label">
+                                    @if (count($selectedCompanies) > 0)
+                                        Company ({{ count($selectedCompanies) }})
+                                    @else
+                                        Filter Company
+                                    @endif
+                                </span>
 
-                                <p class="mt-1 text-xs text-slate-400">
-                                    Select one or more company.
-                                </p>
-                            </div>
-
-                            <button type="button" id="clear-company-filters"
-                                class="text-left text-xs font-bold
-                                       text-kanmo-600 hover:text-kanmo-700 cursor-pointer border-[1px] border-gray-200 rounded p-1">
-                                Clear company filters
+                                <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7" />
+                                </svg>
                             </button>
-                        </div>
 
-                        <div id="company-filter-list"
-                            class="grid grid-cols-1 gap-2
-                                   sm:grid-cols-2 md:grid-cols-3
-                                   xl:grid-cols-4">
-                            @forelse ($companies as $company)
-                                <label
-                                    class="group flex cursor-pointer
-                                           items-center gap-3 rounded-xl
-                                           border border-stone-200
-                                           bg-white px-3 py-2.5
-                                           transition-colors
-                                           hover:border-kanmo-200
-                                           hover:bg-kanmo-50/50">
-                                    <input type="checkbox" name="companies[]" value="{{ $company }}"
-                                        class="company-filter-checkbox
-           h-4 w-4 rounded
-           border-stone-300
-           text-kanmo-600
-           focus:ring-kanmo-500"
-                                        @checked(in_array($company, $selectedCompanies, true))>
+                            <div id="set-pic-company-filter-dropdown"
+                                class="z-30 hidden min-w-72 max-w-sm rounded-xl
+                   border border-kanmo-200 bg-white
+                   p-4 shadow-lg">
+                                <div class="mb-3 flex items-center justify-between gap-5">
+                                    <div>
+                                        <h6 class="text-sm font-bold text-gray-900">
+                                            Company
+                                        </h6>
 
-                                    <span
-                                        class="min-w-0 truncate text-sm
-                                               font-semibold text-slate-600
-                                               group-hover:text-kanmo-700"
-                                        title="{{ $company }}">
-                                        {{ $company }}
-                                    </span>
-                                </label>
-                            @empty
-                                <p class="text-sm text-slate-500">
-                                    There is no company available
-                                </p>
-                            @endforelse
-                        </div>
-                    </div>
+                                        <p class="mt-0.5 text-xs text-slate-500">
+                                            Select one or more company.
+                                        </p>
+                                    </div>
 
-                    {{-- Source filters --}}
-                    <div class="mt-5 border-t border-slate-200 pt-5">
-                        <div
-                            class="mb-3 flex flex-col gap-2
-               sm:flex-row sm:items-center
-               sm:justify-between">
-                            <div>
-                                <p class="text-xs font-bold text-slate-600">
-                                    Source
-                                </p>
+                                    <button type="button" id="clear-company-filters"
+                                        class="cursor-pointer whitespace-nowrap
+                           text-xs font-semibold
+                           text-kanmo-600
+                           hover:text-kanmo-700">
+                                        Reset
+                                    </button>
+                                </div>
 
-                                <p class="mt-1 text-xs text-slate-400">
-                                    Select one or more sources.
-                                </p>
+                                <ul id="company-filter-list" class="max-h-72 space-y-2 overflow-y-auto pr-1">
+                                    @forelse ($companies as $index => $company)
+                                        <li>
+                                            <label for="set-pic-company-filter-{{ $index }}"
+                                                class="group flex cursor-pointer
+                                   items-center gap-3 rounded-lg
+                                   px-2 py-2
+                                   hover:bg-slate-50">
+                                                <input id="set-pic-company-filter-{{ $index }}" type="checkbox"
+                                                    name="companies[]" value="{{ $company }}"
+                                                    class="company-filter-checkbox
+                                       h-4 w-4 cursor-pointer rounded
+                                       border-stone-300
+                                       text-kanmo-600
+                                       focus:ring-kanmo-500"
+                                                    @checked(in_array($company, $selectedCompanies, true))>
+
+                                                <span
+                                                    class="min-w-0 truncate text-sm
+                                       font-medium text-slate-600"
+                                                    title="{{ $company }}">
+                                                    {{ $company }}
+                                                </span>
+                                            </label>
+                                        </li>
+                                    @empty
+                                        <li class="text-sm text-slate-500">
+                                            There is no company available.
+                                        </li>
+                                    @endforelse
+                                </ul>
                             </div>
-
-                            <button type="button" id="clear-source-filters"
-                                class="cursor-pointer rounded border
-                   border-gray-200 p-1 text-left
-                   text-xs font-bold text-kanmo-600
-                   hover:text-kanmo-700">
-                                Clear source filters
-                            </button>
                         </div>
 
-                        <div id="source-filter-list"
-                            class="grid grid-cols-1 gap-2
-               sm:grid-cols-2 md:grid-cols-3
-               xl:grid-cols-4">
-                            @forelse ($sources as $source)
-                                <label
-                                    class="group flex cursor-pointer
-                       items-center gap-3 rounded-xl
-                       border border-stone-200
-                       bg-white px-3 py-2.5
-                       transition-colors
-                       hover:border-kanmo-200
-                       hover:bg-kanmo-50/50">
-                                    <input type="checkbox" name="sources[]" value="{{ $source }}"
-                                        class="source-filter-checkbox
-           h-4 w-4 rounded
-           border-stone-300
-           text-kanmo-600
-           focus:ring-kanmo-500"
-                                        @checked(in_array($source, $selectedSources, true))>
+                        {{-- SOURCE FILTER --}}
+                        <div class="relative">
+                            <button id="set-pic-source-filter-button"
+                                data-dropdown-toggle="set-pic-source-filter-dropdown" type="button"
+                                class="kanmo-btn-primary">
+                                <span id="set-pic-source-filter-label">
+                                    @if (count($selectedSources) > 0)
+                                        Source ({{ count($selectedSources) }})
+                                    @else
+                                        Filter Source
+                                    @endif
+                                </span>
 
-                                    <span
-                                        class="min-w-0 truncate
-                           text-sm font-semibold
-                           text-slate-600
-                           group-hover:text-kanmo-700"
-                                        title="{{ $source }}">
-                                        {{ $source }}
-                                    </span>
-                                </label>
-                            @empty
-                                <p class="text-sm text-slate-500">
-                                    There is no source available
-                                </p>
-                            @endforelse
+                                <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+                            <div id="set-pic-source-filter-dropdown"
+                                class="z-30 hidden min-w-72 max-w-sm rounded-xl
+                   border border-kanmo-200 bg-white
+                   p-4 shadow-lg">
+                                <div class="mb-3 flex items-center justify-between gap-5">
+                                    <div>
+                                        <h6 class="text-sm font-bold text-gray-900">
+                                            Source
+                                        </h6>
+
+                                        <p class="mt-0.5 text-xs text-slate-500">
+                                            Select one or more sources.
+                                        </p>
+                                    </div>
+
+                                    <button type="button" id="clear-source-filters"
+                                        class="cursor-pointer whitespace-nowrap
+                           text-xs font-semibold
+                           text-kanmo-600
+                           hover:text-kanmo-700">
+                                        Reset
+                                    </button>
+                                </div>
+
+                                <ul id="source-filter-list" class="max-h-72 space-y-2 overflow-y-auto pr-1">
+                                    @forelse ($sources as $index => $source)
+                                        <li>
+                                            <label for="set-pic-source-filter-{{ $index }}"
+                                                class="group flex cursor-pointer
+                                   items-center gap-3 rounded-lg
+                                   px-2 py-2
+                                   hover:bg-slate-50">
+                                                <input id="set-pic-source-filter-{{ $index }}" type="checkbox"
+                                                    name="sources[]" value="{{ $source }}"
+                                                    class="source-filter-checkbox
+                                       h-4 w-4 cursor-pointer rounded
+                                       border-stone-300
+                                       text-kanmo-600
+                                       focus:ring-kanmo-500"
+                                                    @checked(in_array($source, $selectedSources, true))>
+
+                                                <span
+                                                    class="min-w-0 truncate text-sm
+                                       font-medium text-slate-600"
+                                                    title="{{ $source }}">
+                                                    {{ $source }}
+                                                </span>
+                                            </label>
+                                        </li>
+                                    @empty
+                                        <li class="text-sm text-slate-500">
+                                            There is no source available.
+                                        </li>
+                                    @endforelse
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -222,14 +256,23 @@
                     <div>
                         <h2 class="text-sm font-bold text-slate-900">
                             Employee Without PIC
-                        </h2>
+                                <a href="{{ route('set-pic.download') }}" id="set-pic-download"
+                                    class="rounded px-2 py-1 font-semibold text-orange transition duration-300 hover:bg-gray-200">
+                                    Download
+                                </a>
 
-                        <p class="mt-1 text-xs text-slate-500">
-                            <span id="employee-result-count">
-                                {{ number_format($employees->total(), 0, ',', '.') }}
-                            </span>
-                            employee does not have a PIC yet
-                        </p>
+                                <form action="{{ route('set-pic.upload') }}" method="POST"
+                                    enctype="multipart/form-data" class="inline-flex ml-2">
+                                    @csrf
+
+                                    <label
+                                        class="cursor-pointer rounded bg-orange-400 px-2 py-1 font-semibold text-white transition duration-300 hover:bg-orange-600">
+                                        Upload
+                                        <input type="file" name="file" accept=".xlsx,.xls" class="hidden"
+                                            onchange=" if (this.files.length > 0) {this.form.submit();}">
+                                    </label>
+                                </form>
+                        </h2>
                     </div>
 
                     {{-- Batch assignment controls --}}

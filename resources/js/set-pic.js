@@ -61,6 +61,74 @@ document.addEventListener('DOMContentLoaded', () => {
         'set-pic-search-status'
     );
 
+    const companyFilterLabel = document.getElementById(
+        'set-pic-company-filter-label'
+    );
+
+    const sourceFilterLabel = document.getElementById(
+        'set-pic-source-filter-label'
+    );
+
+    const downloadButton =
+        document.querySelector("#set-pic-download");
+
+
+    downloadButton?.addEventListener(
+        "click",
+        (event) => {
+            event.preventDefault();
+
+            const url = new URL(
+                downloadButton.href,
+                window.location.origin
+            );
+
+            /*
+            * SEARCH
+            */
+            const search =
+                searchInput?.value.trim() ?? "";
+
+            if (search) {
+                url.searchParams.set(
+                    "search",
+                    search
+                );
+            }
+
+            /*
+            * COMPANY
+            */
+            document
+                .querySelectorAll(
+                    ".company-filter-checkbox:checked"
+                )
+                .forEach((checkbox) => {
+                    url.searchParams.append(
+                        "companies[]",
+                        checkbox.value
+                    );
+                });
+
+            /*
+            * SOURCE
+            */
+            document
+                .querySelectorAll(
+                    ".source-filter-checkbox:checked"
+                )
+                .forEach((checkbox) => {
+                    url.searchParams.append(
+                        "sources[]",
+                        checkbox.value
+                    );
+                });
+
+            window.location.href =
+                url.toString();
+        }
+    );
+
     /*
      * Pastikan elemen utama tersedia.
      */
@@ -144,6 +212,40 @@ document.addEventListener('DOMContentLoaded', () => {
             .map(
                 (checkbox) => checkbox.value
             );
+    };
+
+    const updateFilterLabels = () => {
+        const selectedCompanies =
+            getSelectedCompanies();
+
+        const selectedSources =
+            getSelectedSources();
+
+        /*
+        * Company label
+        */
+        if (companyFilterLabel) {
+            if (selectedCompanies.length > 0) {
+                companyFilterLabel.textContent =
+                    `Company (${selectedCompanies.length})`;
+            } else {
+                companyFilterLabel.textContent =
+                    'Filter Company';
+            }
+        }
+
+        /*
+        * Source label
+        */
+        if (sourceFilterLabel) {
+            if (selectedSources.length > 0) {
+                sourceFilterLabel.textContent =
+                    `Source (${selectedSources.length})`;
+            } else {
+                sourceFilterLabel.textContent =
+                    'Filter Source';
+            }
+        }
     };
 
     /*
@@ -681,10 +783,8 @@ document.addEventListener('DOMContentLoaded', () => {
             checkbox.addEventListener(
                 'change',
                 () => {
-                    /*
-                     * Filter baru selalu kembali
-                     * ke page pertama.
-                     */
+                    updateFilterLabels();
+
                     loadEmployees();
                 }
             );
@@ -702,10 +802,8 @@ document.addEventListener('DOMContentLoaded', () => {
             checkbox.addEventListener(
                 'change',
                 () => {
-                    /*
-                     * Filter baru selalu kembali
-                     * ke page pertama.
-                     */
+                    updateFilterLabels();
+
                     loadEmployees();
                 }
             );
@@ -723,10 +821,11 @@ document.addEventListener('DOMContentLoaded', () => {
         () => {
             getCompanyCheckboxes().forEach(
                 (checkbox) => {
-                    checkbox.checked =
-                        false;
+                    checkbox.checked = false;
                 }
             );
+
+            updateFilterLabels();
 
             loadEmployees();
         }
@@ -743,10 +842,11 @@ document.addEventListener('DOMContentLoaded', () => {
         () => {
             getSourceCheckboxes().forEach(
                 (checkbox) => {
-                    checkbox.checked =
-                        false;
+                    checkbox.checked = false;
                 }
             );
+
+            updateFilterLabels();
 
             loadEmployees();
         }
@@ -822,4 +922,6 @@ document.addEventListener('DOMContentLoaded', () => {
     syncHiddenInputs();
 
     bindTableEvents();
+
+    updateFilterLabels();
 });

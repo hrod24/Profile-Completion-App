@@ -79,17 +79,6 @@
                         @endforeach
                     </select>
                 </div>
-
-                <button type="submit"
-                    class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-orange-500 px-5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(249,115,22,0.20)] transition hover:bg-orange-600 focus:outline-none focus:ring-4 focus:ring-orange-200">
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                        aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M3 4.5h18l-7.5 8.25v5.25l-3 1.5v-6.75L3 4.5z" />
-                    </svg>
-
-                    Apply Filter
-                </button>
             </form>
 
             <div class="hidden border-t border-slate-100 px-5 py-3 text-xs font-semibold text-slate-500"

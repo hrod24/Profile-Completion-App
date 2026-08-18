@@ -1,24 +1,115 @@
-@if (request()->filled('search') || request()->filled('companies'))
+@php
+    $activeCompanies = \Illuminate\Support\Arr::wrap(
+        request('companies', [])
+    );
+
+    $activeSources = \Illuminate\Support\Arr::wrap(
+        request('sources', [])
+    );
+
+    $hasActiveFilters =
+        request()->filled('search') ||
+        !empty($activeCompanies) ||
+        !empty($activeSources);
+@endphp
+
+@if ($hasActiveFilters)
     <div
-        class="flex flex-col gap-1 border-b border-kanmo-100
-               bg-kanmo-50/70 px-5 py-3 text-sm
-               sm:flex-row sm:items-center sm:justify-between lg:px-6">
-        <div class="text-kanmo-800">
-            @if (request()->filled('search'))
-                Search results for
+        class="border-b border-kanmo-100
+               bg-kanmo-50/70 px-5 py-3
+               lg:px-6"
+    >
+        <div
+            class="flex flex-col gap-3
+                   lg:flex-row lg:items-center
+                   lg:justify-between"
+        >
+            {{-- Selected filters --}}
+            <div class="min-w-0">
 
-                <span class="font-bold">
-                    “{{ request('search') }}”
-                </span>
-            @else
-                Company filter is active
-            @endif
+                <div class="flex flex-wrap items-center gap-2">
+
+                    {{-- SEARCH --}}
+                    @if (request()->filled('search'))
+                        <span
+                            class="inline-flex items-center gap-1.5
+                                   rounded-full bg-white
+                                   px-3 py-1
+                                   text-xs font-semibold
+                                   text-slate-700
+                                   ring-1 ring-inset
+                                   ring-kanmo-200"
+                        >
+                            <span class="text-slate-400">
+                                Search:
+                            </span>
+
+                            <span>
+                                {{ request('search') }}
+                            </span>
+                        </span>
+                    @endif
+
+
+                    {{-- COMPANY --}}
+                    @foreach ($activeCompanies as $company)
+                        @if (trim((string) $company) !== '')
+                            <span
+                                class="inline-flex items-center gap-1.5
+                                       rounded-full bg-kanmo-100
+                                       px-3 py-1
+                                       text-xs font-bold
+                                       text-kanmo-700
+                                       ring-1 ring-inset
+                                       ring-kanmo-600/15"
+                            >
+                                <span>
+                                    {{ $company }}
+                                </span>
+                            </span>
+                        @endif
+                    @endforeach
+
+
+                    {{-- SOURCE --}}
+                    @foreach ($activeSources as $source)
+                        @if (trim((string) $source) !== '')
+                            <span
+                                class="inline-flex items-center gap-1.5
+                                       rounded-full bg-orange-50
+                                       px-3 py-1
+                                       text-xs font-bold
+                                       text-orange-700
+                                       ring-1 ring-inset
+                                       ring-orange-200"
+                            >
+                                <span>
+                                    {{ $source }}
+                                </span>
+                            </span>
+                        @endif
+                    @endforeach
+
+                </div>
+            </div>
+
+
+            {{-- RESULT COUNT --}}
+            <div class="shrink-0">
+                <p
+                    class="text-xs font-semibold
+                           text-kanmo-600"
+                >
+                    {{ number_format(
+                        $employees->total(),
+                        0,
+                        ',',
+                        '.'
+                    ) }}
+                    results found
+                </p>
+            </div>
         </div>
-
-        <p class="text-xs font-semibold text-kanmo-600">
-            {{ number_format($employees->total(), 0, ',', '.') }}
-            results found
-        </p>
     </div>
 @endif
 

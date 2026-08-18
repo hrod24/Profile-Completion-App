@@ -68,6 +68,16 @@ Route::middleware([
     )->name('set-pic.assign');
 
     Route::get(
+        '/set-pic/download',
+        [SetPicController::class, 'download']
+    )->name('set-pic.download');
+
+    Route::post(
+        '/set-pic/upload',
+        [SetPicController::class, 'upload']
+    )->name('set-pic.upload');
+
+    Route::get(
         '/employee-import',
         [EmployeeExcelImportController::class, 'create']
     )->name('employee.import.create');
