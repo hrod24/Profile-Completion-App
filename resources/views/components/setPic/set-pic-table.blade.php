@@ -1,29 +1,19 @@
 @php
-    $activeCompanies = \Illuminate\Support\Arr::wrap(
-        request('companies', [])
-    );
+    $activeCompanies = \Illuminate\Support\Arr::wrap(request('companies', []));
 
-    $activeSources = \Illuminate\Support\Arr::wrap(
-        request('sources', [])
-    );
+    $activeSources = \Illuminate\Support\Arr::wrap(request('sources', []));
 
-    $hasActiveFilters =
-        request()->filled('search') ||
-        !empty($activeCompanies) ||
-        !empty($activeSources);
+    $hasActiveFilters = request()->filled('search') || !empty($activeCompanies) || !empty($activeSources);
 @endphp
 
 @if ($hasActiveFilters)
-    <div
-        class="border-b border-kanmo-100
+    <div class="border-b border-kanmo-100
                bg-kanmo-50/70 px-5 py-3
-               lg:px-6"
-    >
+               lg:px-6">
         <div
             class="flex flex-col gap-3
                    lg:flex-row lg:items-center
-                   lg:justify-between"
-        >
+                   lg:justify-between">
             {{-- Selected filters --}}
             <div class="min-w-0">
 
@@ -38,8 +28,7 @@
                                    text-xs font-semibold
                                    text-slate-700
                                    ring-1 ring-inset
-                                   ring-kanmo-200"
-                        >
+                                   ring-kanmo-200">
                             <span class="text-slate-400">
                                 Search:
                             </span>
@@ -61,8 +50,7 @@
                                        text-xs font-bold
                                        text-kanmo-700
                                        ring-1 ring-inset
-                                       ring-kanmo-600/15"
-                            >
+                                       ring-kanmo-600/15">
                                 <span>
                                     {{ $company }}
                                 </span>
@@ -81,8 +69,7 @@
                                        text-xs font-bold
                                        text-orange-700
                                        ring-1 ring-inset
-                                       ring-orange-200"
-                            >
+                                       ring-orange-200">
                                 <span>
                                     {{ $source }}
                                 </span>
@@ -96,16 +83,9 @@
 
             {{-- RESULT COUNT --}}
             <div class="shrink-0">
-                <p
-                    class="text-xs font-semibold
-                           text-kanmo-600"
-                >
-                    {{ number_format(
-                        $employees->total(),
-                        0,
-                        ',',
-                        '.'
-                    ) }}
+                <p class="text-xs font-semibold
+                           text-kanmo-600">
+                    {{ number_format($employees->total(), 0, ',', '.') }}
                     results found
                 </p>
             </div>

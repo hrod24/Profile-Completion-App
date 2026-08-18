@@ -256,22 +256,22 @@
                     <div>
                         <h2 class="text-sm font-bold text-slate-900">
                             Employee Without PIC
-                                <a href="{{ route('set-pic.download') }}" id="set-pic-download"
-                                    class="rounded px-2 py-1 font-semibold text-orange transition duration-300 hover:bg-gray-200">
-                                    Download
-                                </a>
+                            <a href="{{ route('set-pic.download') }}" id="set-pic-download"
+                                class="rounded px-2 py-1 font-semibold text-orange transition duration-300 hover:bg-gray-200">
+                                Download
+                            </a>
 
-                                <form action="{{ route('set-pic.upload') }}" method="POST"
-                                    enctype="multipart/form-data" class="inline-flex ml-2">
-                                    @csrf
+                            <form action="{{ route('set-pic.upload') }}" method="POST"
+                                enctype="multipart/form-data" class="inline-flex ml-2">
+                                @csrf
 
-                                    <label
-                                        class="cursor-pointer rounded bg-orange-400 px-2 py-1 font-semibold text-white transition duration-300 hover:bg-orange-600">
-                                        Upload
-                                        <input type="file" name="file" accept=".xlsx,.xls" class="hidden"
-                                            onchange=" if (this.files.length > 0) {this.form.submit();}">
-                                    </label>
-                                </form>
+                                <label
+                                    class="cursor-pointer rounded bg-orange-400 px-2 py-1 font-semibold text-white transition duration-300 hover:bg-orange-600">
+                                    Upload
+                                    <input type="file" name="file" accept=".xlsx,.xls" class="hidden"
+                                        onchange=" if (this.files.length > 0) {this.form.submit();}">
+                                </label>
+                            </form>
                         </h2>
                     </div>
 
