@@ -720,12 +720,7 @@ class EmployeeFormController extends Controller
                 $file->getClientOriginalExtension()
             );
 
-            $fileName =
-                $config['prefix']
-                . '_'
-                . $safeEmployeeId
-                . '.'
-                . $extension;
+            $fileName = $safeEmployeeId. '.' . $extension;
 
             $directory =
                 'employee-documents/'
@@ -1178,7 +1173,7 @@ class EmployeeFormController extends Controller
                 );
 
             $filename =
-                "{$prefix}_{$employee->employee_id}.{$extension}";
+                "{$employee->employee_id}.{$extension}";
 
             $path = $file->storeAs(
                 'employee-documents',
