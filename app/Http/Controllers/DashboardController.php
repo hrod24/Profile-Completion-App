@@ -348,6 +348,138 @@ class DashboardController extends Controller
         $totalEmployees =
             (clone $filterQuery)->count();
 
+        /*
+ * ============================================================
+ * FIELD-LEVEL PROFILE COMPLETION
+ * ============================================================
+ *
+ * Menghitung seluruh field wajib HR + employee.
+ * "berapa field yang sudah terisi dari seluruh field
+ * yang seharusnya diisi".
+ */
+
+        $profileRequiredFields = array_values(
+            array_unique(
+                array_merge(
+                    config('employee.hr_required_fields', []),
+                    config('employee.employee_required_fields', [])
+                )
+            )
+        );
+
+        $emptyValues = array_map(
+            fn($value) => strtoupper(trim((string) $value)),
+            config('employee.empty_values', [])
+        );
+
+        /*
+ * Jumlah field wajib untuk satu employee.
+ */
+        $requiredFieldsPerEmployee = count(
+            $profileRequiredFields
+        );
+
+        /*
+ * Total slot field.
+ *
+ * Contoh:
+ * 100 employee × 43 field = 4.300 field.
+ */
+        $totalProfileFields =
+            $totalEmployees * $requiredFieldsPerEmployee;
+
+        $filledProfileFields = 0;
+
+        if (
+            $totalEmployees > 0 &&
+            $requiredFieldsPerEmployee > 0
+        ) {
+            $fieldExpressions = [];
+            $bindings = [];
+
+            foreach ($profileRequiredFields as $field) {
+                /*
+         * Field dianggap terisi apabila:
+         *
+         * - tidak NULL
+         * - bukan string kosong
+         * - bukan hanya spasi
+         * - bukan -, --, N/A
+         */
+                $condition =
+                    "COALESCE(
+                TRIM(CAST(`{$field}` AS CHAR)),
+                ''
+            ) != ''";
+
+                if (!empty($emptyValues)) {
+                    $placeholders = implode(
+                        ',',
+                        array_fill(
+                            0,
+                            count($emptyValues),
+                            '?'
+                        )
+                    );
+
+                    $condition .=
+                        " AND UPPER(
+                    TRIM(CAST(`{$field}` AS CHAR))
+                ) NOT IN ({$placeholders})";
+
+                    foreach ($emptyValues as $emptyValue) {
+                        $bindings[] = $emptyValue;
+                    }
+                }
+
+                $fieldExpressions[] =
+                    "SUM(
+                CASE
+                    WHEN {$condition}
+                    THEN 1
+                    ELSE 0
+                END
+            )";
+            }
+
+            $filledProfileFields = (int) (
+                (clone $filterQuery)
+                ->selectRaw(
+                    'COALESCE((' .
+                        implode(
+                            ' + ',
+                            $fieldExpressions
+                        ) .
+                        '), 0) AS filled_profile_fields',
+                    $bindings
+                )
+                ->value('filled_profile_fields')
+                ?? 0
+            );
+        }
+
+        /*
+ * Field yang masih belum terisi.
+ */
+        $incompleteProfileFields = max(
+            $totalProfileFields - $filledProfileFields,
+            0
+        );
+
+        /*
+ * Persentase seluruh field.
+ */
+        $fieldCompletionPercentage =
+            $totalProfileFields > 0
+            ? round(
+                (
+                    $filledProfileFields /
+                    $totalProfileFields
+                ) * 100,
+                2
+            )
+            : 0;
+
         $completedEmployees =   
             (clone $filterQuery)
             ->employeeDataComplete()
@@ -470,6 +602,21 @@ class DashboardController extends Controller
 
             'fullCompletionPercentage' =>
             $fullCompletionPercentage,
+            
+            'requiredFieldsPerEmployee' =>
+            $requiredFieldsPerEmployee,
+
+            'totalProfileFields' =>
+            $totalProfileFields,
+
+            'filledProfileFields' =>
+            $filledProfileFields,
+
+            'incompleteProfileFields' =>
+            $incompleteProfileFields,
+
+            'fieldCompletionPercentage' =>
+            $fieldCompletionPercentage,
         ];
 
         /*
