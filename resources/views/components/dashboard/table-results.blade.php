@@ -99,7 +99,7 @@
                                 {{ $employeeInitial }}
                             </div>
                             <div class="min-w-0">
-                                <p class="truncate text-sm font-bold text-slate-900" title="{{ $employeeName }}">
+                                <p class="truncate text-sm font-semibold text-slate-900" title="{{ $employeeName }}">
                                     {{ $employeeName }}</p>
                                 <div class="mt-1 flex items-center gap-2">
                                     <span class="text-xs text-slate-400">NIP</span>
@@ -117,7 +117,7 @@
                                 {{ strtoupper(substr(trim($employeePic), 0, 1)) }}
                             </div>
                             <div class="min-w-0">
-                                <p class="truncate text-sm font-bold text-slate-900" title="{{ $employeeName }}">
+                                <p class="truncate text-sm font-semibold text-slate-900" title="{{ $employeeName }}">
                                     {{ $employeePic }}</p>
                             </div>
                         </div>
@@ -125,7 +125,7 @@
 
                     <td class="px-4 py-1 text-center">
                         <div class="min-w-0">
-                            <p class="truncate text-sm font-bold text-slate-900" title="{{ $employeeName }}">
+                            <p class="truncate text-sm font-semibold text-slate-900" title="{{ $employeeName }}">
                                 {{ $employee->sourceData->source ?? '---' }}</p>
                         </div>
 

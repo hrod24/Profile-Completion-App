@@ -6,18 +6,13 @@
                 <h2 class="text-sm font-bold text-slate-900">
                     Completion by Source
                 </h2>
-
-                <p class="mt-1 text-xs text-slate-500">
-                    Percentage is calculated from completed
-                    required fields, not completed employees.
-                </p>
             </div>
 
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[950px]
                            table-auto text-left">
                     <thead class="border-b border-stone-200
-                               bg-stone-50/90">
+                               bg-stone-50/90 text-center">
                         <tr>
                             <th
                                 class="w-16 px-4 py-3 text-center
@@ -96,90 +91,89 @@
                                 };
                             @endphp
 
-                            <tr class="transition-colors
-                                       hover:bg-kanmo-50/35">
-                                <td class="px-4 py-3 text-center">
-                                    <span
-                                        class="inline-flex h-8 min-w-8
-                                               items-center justify-center
-                                               rounded-lg bg-stone-100
-                                               px-2 text-xs font-bold
-                                               text-slate-600">
-                                        {{ $loop->iteration }}
-                                    </span>
-                                </td>
+                            <tr onclick="window.location.href='{{ route('progress-report.source', ['source' => $report['source'],]) }}'" onkeydown="
+                            if (event.key === 'Enter' || event.key === ' ') {
+                                window.location.href='{{ route('progress-report.source', [
+                                    'source' => $report['source'],
+                                ]) }}';
+                            }" tabindex="0" role="link" class="cursor-pointer transition-colors hover:bg-slate-200 focus:bg-kanmo-50/60 focus:outline-none">
+                                    <td class="px-4 py-3 text-center">
+                                        <span class="items-center px-2 text-xs font-bold text-slate-600">
+                                            {{ $loop->iteration }}
+                                        </span>
+                                    </td>
 
-                                <td class="px-4 py-3">
-                                    <span
-                                        class="text-sm font-bold
+                                    <td class="px-2 py-1">
+                                        <span
+                                            class="text-sm font-semibold
                                                text-slate-900">
-                                        {{ $report['source'] }}
-                                    </span>
-                                </td>
+                                            {{ $report['source'] }}
+                                        </span>
+                                    </td>
 
-                                <td class="px-4 py-3">
-                                    <span
-                                        class="text-sm font-semibold
+                                    <td class="px-2 text-center py-1">
+                                        <span
+                                            class="text-sm font-semibold
                                                text-slate-700">
-                                        {{ number_format($report['headcount'], 0, ',', '.') }}
-                                    </span>
-                                </td>
+                                            {{ number_format($report['headcount'], 0, ',', '.') }}
+                                        </span>
+                                    </td>
 
-                                <td class="px-4 py-3">
-                                    <span
-                                        class="text-sm font-bold
+                                    <td class="px-2 text-center py-1">
+                                        <span
+                                            class="text-sm font-bold
                                                text-emerald-600">
-                                        <a href="">{{ number_format($report['completed'], 0, ',', '.') }}</a>
-                                    </span>
-                                </td>
+                                            {{ number_format($report['completed'], 0, ',', '.') }}
+                                        </span>
+                                    </td>
 
-                                <td class="px-4 py-3">
-                                    <span
-                                        class="text-sm font-bold
+                                    <td class="px-2 text-center py-1">
+                                        <span
+                                            class="text-sm font-bold
                                                text-rose-600">
-                                        <a href="">{{ number_format($report['not_completed'], 0, ',', '.') }}</a>
-                                    </span>
-                                </td>
+                                            {{ number_format($report['not_completed'], 0, ',', '.') }}
+                                        </span>
+                                    </td>
 
-                                <td class="px-4 py-3">
-                                    <div class="min-w-[280px]">
-                                        <div
-                                            class="mb-2 flex
+                                    <td class="px-2 py-1">
+                                        <div class="min-w-[280px]">
+                                            <div
+                                                class="mb-2 flex
                                                    items-center
                                                    justify-between gap-4">
-                                            <span
-                                                class="text-sm
+                                                <span
+                                                    class="text-sm
                                                        font-extrabold
                                                        {{ $progressMeta['text'] }}">
-                                                {{ number_format($percentage, 2, ',', '.') }}%
-                                            </span>
+                                                    {{ number_format($percentage, 2, ',', '.') }}%
+                                                </span>
 
-                                            <span
-                                                class="text-xs
+                                                <span
+                                                    class="text-xs
                                                        font-semibold
                                                        {{ $progressMeta['text'] }}">
-                                                {{ $progressMeta['label'] }}
-                                            </span>
-                                        </div>
+                                                    {{ $progressMeta['label'] }}
+                                                </span>
+                                            </div>
 
-                                        <div class="h-2 overflow-hidden
+                                            <div class="h-2 overflow-hidden
                                                    rounded-full
                                                    bg-stone-200"
-                                            role="progressbar" aria-valuemin="0" aria-valuemax="100"
-                                            aria-valuenow="{{ $percentage }}">
-                                            <div class="h-full rounded-full
+                                                role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                                                aria-valuenow="{{ $percentage }}">
+                                                <div class="h-full rounded-full
                                                        {{ $progressMeta['bar'] }}"
-                                                style="width: {{ $percentage }}%"></div>
-                                        </div>
+                                                    style="width: {{ $percentage }}%"></div>
+                                            </div>
 
-                                        <div
-                                            class="mt-2 flex
+                                            <div
+                                                class="mt-2 flex
                                                    justify-between
                                                    text-[11px]
                                                    text-slate-400">
+                                            </div>
                                         </div>
-                                    </div>
-                                </td>
+                                    </td>
                             </tr>
                         @empty
                             <tr>
@@ -206,16 +200,16 @@
                                 <td
                                     class="px-4 py-4 text-sm
                                            font-extrabold
-                                           text-slate-900">
+                                           text-slate-900 text-center">
                                     {{ number_format($totalHeadcount, 0, ',', '.') }}
                                 </td>
 
-                                <td class="px-4 py-4 text-sm font-extrabold text-emerald-600">
-                                    <a href="">{{ number_format($totalCompletedEmployees, 0, ',', '.') }}</a>
+                                <td class="px-4 py-4 text-sm text-center font-extrabold text-emerald-600">
+                                    {{ number_format($totalCompletedEmployees, 0, ',', '.') }}
                                 </td>
 
-                                <td class="px-4 py-4 text-sm font-extrabold text-rose-600">
-                                    <a href="">{{ number_format($totalNotCompletedEmployees, 0, ',', '.') }}</a>
+                                <td class="px-4 py-4 text-sm text-center font-extrabold text-rose-600">
+                                    {{ number_format($totalNotCompletedEmployees, 0, ',', '.') }}
                                 </td>
 
                                 <td class="px-4 py-4">

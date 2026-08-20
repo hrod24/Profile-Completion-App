@@ -52,6 +52,11 @@ Route::middleware([
     ->name('progress-report.index');
 
   Route::get(
+    '/progress-report/{source}',
+    [ProgressReportController::class, 'source']
+    )->name('progress-report.source');
+
+  Route::get(
     '/dashboard/employees/export',
     EmployeeExportController::class
   )->name('dashboard.employee-export');
