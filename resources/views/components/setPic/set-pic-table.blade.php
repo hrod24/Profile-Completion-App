@@ -4,6 +4,16 @@
     $activeSources = \Illuminate\Support\Arr::wrap(request('sources', []));
 
     $hasActiveFilters = request()->filled('search') || !empty($activeCompanies) || !empty($activeSources);
+    $activeDivisions = \Illuminate\Support\Arr::wrap(request('divisions', []));
+
+    $activeDepartments = \Illuminate\Support\Arr::wrap(request('departments', []));
+
+    $hasActiveFilters =
+        request()->filled('search') ||
+        !empty($activeCompanies) ||
+        !empty($activeSources) ||
+        !empty($activeDivisions) ||
+        !empty($activeDepartments);
 @endphp
 
 @if ($hasActiveFilters)
@@ -94,7 +104,7 @@
 @endif
 
 <div class="overflow-x-auto">
-    <table class="w-full min-w-[850px] table-auto text-left">
+    <table class="w-full min-w-[890px] table-auto text-left">
         <thead class="border-b text-center border-stone-200 bg-stone-50/90">
             <tr>
                 <th class="w-16 px-4 py-2.5 text-center
@@ -114,7 +124,7 @@
                            text-xs font-bold text-slate-500">
                     Employee
                 </th>
-                <th class="min-w-[220px] px-4 py-2.5
+                <th class="min-w-[240px] px-4 py-2.5
                            text-xs font-bold text-slate-500">
                     Company
                 </th>
@@ -122,6 +132,15 @@
                 <th class="min-w-[220px] px-4 py-2.5
                            text-xs font-bold text-slate-500">
                     Source
+                </th>
+                <th class="min-w-[240px] px-4 py-2.5
+           text-xs font-bold text-slate-500">
+                    Division
+                </th>
+
+                <th class="min-w-[240px] px-4 py-2.5
+           text-xs font-bold text-slate-500">
+                    Department
                 </th>
 
 
@@ -193,16 +212,14 @@
                         </div>
                     </td>
 
-                    <td class="px-4 py-2 text-center">
+                    <td class="px-4 py-2">
                         @if ($employee->company)
-                            <span
-                                class="inline-flex rounded-full
-                                       bg-kanmo-50 px-3 py-1
-                                       text-xs font-bold text-kanmo-700
-                                       ring-1 ring-inset
-                                       ring-kanmo-600/15">
-                                {{ $employee->company }}
-                            </span>
+                        <div>
+                                <p class="text-sm font-semibold
+                       text-slate-700 text-center">
+                                    {{ $employee->company }}
+                                </p>
+                            </div>
                         @else
                             <span
                                 class="inline-flex rounded-full
@@ -215,14 +232,12 @@
 
                     <td class="px-4 py-2 text-center">
                         @if ($employee->sourceData?->source)
-                            <span
-                                class="inline-flex rounded-full
-                                       bg-kanmo-50 px-3 py-1
-                                       text-xs font-bold text-kanmo-700
-                                       ring-1 ring-inset
-                                       ring-kanmo-600/15">
-                                {{ $employee->sourceData?->source }}
-                            </span>
+                        <div>
+                                <p class="text-sm font-semibold
+                       text-slate-700 text-center">
+                                    {{ $employee->sourceData?->source }}
+                                </p>
+                            </div>
                         @else
                             <span
                                 class="inline-flex rounded-full
@@ -232,10 +247,40 @@
                             </span>
                         @endif
                     </td>
+                    <td class="px-4 py-2">
+                        @if ($employee->division_name)
+                            <div>
+                                <p class="text-sm font-semibold
+                       text-slate-700 text-center">
+                                    {{ $employee->division_name }}
+                                </p>
+                            </div>
+                        @else
+                            <span class="text-xs font-medium
+                   text-slate-400">
+                                No Division
+                            </span>
+                        @endif
+                    </td>
+                    <td class="px-4 py-2">
+                        @if ($employee->department_name)
+                            <div>
+                                <p class="text-sm font-semibold
+                       text-slate-700 text-center">
+                                    {{ $employee->department_name }}
+                                </p>
+                            </div>
+                        @else
+                            <span class="text-xs font-medium
+                   text-slate-400">
+                                No Department
+                            </span>
+                        @endif
+                    </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="4" class="px-6 py-16 text-center">
+                    <td colspan="7" class="px-6 py-16 text-center">
                         <div
                             class="mx-auto flex h-14 w-14
                                    items-center justify-center

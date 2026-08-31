@@ -1,4 +1,13 @@
 <x-layout :title="$title">
+    @php
+        $hasHeadOfficeSource = collect($selectedSources)->contains(
+            fn($source) => strtoupper(trim((string) $source)) === 'HEAD OFFICE',
+        );
+
+        $hasStoreSource = collect($selectedSources)->contains(
+            fn($source) => strtoupper(trim((string) $source)) === 'STORE',
+        );
+    @endphp
     <div id="set-pic-page" data-endpoint="{{ route('set-pic.index') }}">
         <x-app-shell title="Set PIC Employee" subtitle="Assign PIC to one or more employees in batches.">
             {{-- Success alert --}}
@@ -240,6 +249,160 @@
                                             There is no source available.
                                         </li>
                                     @endforelse
+                                </ul>
+                            </div>
+                        </div>
+
+                        {{-- DIVISION FILTER --}}
+                        <div id="set-pic-division-filter-wrapper"
+                            class="relative {{ $hasHeadOfficeSource ? '' : 'hidden' }}">
+                            <button id="set-pic-division-filter-button"
+                                data-dropdown-toggle="set-pic-division-filter-dropdown" type="button"
+                                class="kanmo-btn-primary">
+                                <span id="set-pic-division-filter-label">
+                                    @if (count($selectedDivisions) > 0)
+                                        Division ({{ count($selectedDivisions) }})
+                                    @else
+                                        Filter Division
+                                    @endif
+                                </span>
+
+                                <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+                            <div id="set-pic-division-filter-dropdown"
+                                class="z-30 hidden min-w-80 max-w-sm rounded-xl
+               border border-kanmo-200 bg-white
+               p-4 shadow-lg">
+                                <div class="mb-3 flex items-center
+                   justify-between gap-5">
+                                    <div>
+                                        <h6 class="text-sm font-bold
+                           text-gray-900">
+                                            Division
+                                        </h6>
+
+                                        <p class="mt-0.5 text-xs text-slate-500">
+                                            HEAD OFFICE division.
+                                        </p>
+                                    </div>
+
+                                    <button type="button" id="clear-division-filters"
+                                        class="cursor-pointer text-xs
+                       font-semibold text-kanmo-600
+                       hover:text-kanmo-700">
+                                        Reset
+                                    </button>
+                                </div>
+
+                                <ul class="max-h-72 space-y-2
+                   overflow-y-auto pr-1">
+                                    @foreach ($divisions as $index => $division)
+                                        <li>
+                                            <label for="set-pic-division-filter-{{ $index }}"
+                                                class="group flex cursor-pointer
+                               items-center gap-3
+                               rounded-lg px-2 py-2
+                               hover:bg-slate-50">
+                                                <input id="set-pic-division-filter-{{ $index }}"
+                                                    type="checkbox" name="divisions[]"
+                                                    value="{{ $division->business_unit_code }}"
+                                                    class="division-filter-checkbox
+                                   h-4 w-4 cursor-pointer rounded
+                                   border-stone-300 text-kanmo-600
+                                   focus:ring-kanmo-500"
+                                                    @checked(in_array($division->business_unit_code, $selectedDivisions, true))>
+
+                                                <span
+                                                    class="min-w-0 truncate
+                                   text-sm font-medium
+                                   text-slate-600"
+                                                    title="{{ $division->business_unit_name }}">
+                                                    {{ $division->business_unit_name }}
+                                                    ({{ $division->business_unit_code }})
+                                                </span>
+                                            </label>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+
+                        {{-- DEPARTMENT / BRAND FILTER --}}
+                        <div id="set-pic-department-filter-wrapper"
+                            class="relative {{ $hasStoreSource ? '' : 'hidden' }}">
+                            <button id="set-pic-department-filter-button"
+                                data-dropdown-toggle="set-pic-department-filter-dropdown" type="button"
+                                class="kanmo-btn-primary">
+                                <span id="set-pic-department-filter-label">
+                                    @if (count($selectedDepartments) > 0)
+                                        Department ({{ count($selectedDepartments) }})
+                                    @else
+                                        Filter Department / Brand
+                                    @endif
+                                </span>
+
+                                <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+                            <div id="set-pic-department-filter-dropdown"
+                                class="z-30 hidden min-w-80 max-w-sm
+               rounded-xl border border-kanmo-200
+               bg-white p-4 shadow-lg">
+                                <div class="mb-3 flex items-center
+                   justify-between gap-5">
+                                    <div>
+                                        <h6 class="text-sm font-bold text-gray-900">
+                                            Department / Brand
+                                        </h6>
+
+                                        <p class="mt-0.5 text-xs text-slate-500">
+                                            Only departments used by STORE employees.
+                                        </p>
+                                    </div>
+
+                                    <button type="button" id="clear-department-filters"
+                                        class="cursor-pointer text-xs
+                       font-semibold text-kanmo-600
+                       hover:text-kanmo-700">
+                                        Reset
+                                    </button>
+                                </div>
+
+                                <ul class="max-h-72 space-y-2
+                   overflow-y-auto pr-1">
+                                    @foreach ($departments as $index => $department)
+                                        <li>
+                                            <label for="set-pic-department-filter-{{ $index }}"
+                                                class="group flex cursor-pointer
+                               items-center gap-3
+                               rounded-lg px-2 py-2
+                               hover:bg-slate-50">
+                                                <input id="set-pic-department-filter-{{ $index }}"
+                                                    type="checkbox" name="departments[]"
+                                                    value="{{ $department->department_code }}"
+                                                    class="department-filter-checkbox
+                                   h-4 w-4 cursor-pointer rounded
+                                   border-stone-300 text-kanmo-600
+                                   focus:ring-kanmo-500"
+                                                    @checked(in_array($department->department_code, $selectedDepartments, true))>
+
+                                                <span
+                                                    class="min-w-0 truncate
+                                   text-sm font-medium
+                                   text-slate-600">
+                                                    {{ $department->department_name }}
+                                                    ({{ $department->department_code }})
+                                                </span>
+                                            </label>
+                                        </li>
+                                    @endforeach
                                 </ul>
                             </div>
                         </div>

@@ -24,6 +24,36 @@ class SetPicController extends Controller
       (string) $request->query('search', '')
     );
 
+    $selectedDivisions = collect(
+      Arr::wrap(
+        $request->query('divisions', [])
+      )
+    )
+      ->map(
+        fn($division) => trim(
+          (string) $division
+        )
+      )
+      ->filter()
+      ->unique()
+      ->values()
+      ->all();
+
+    $selectedDepartments = collect(
+      Arr::wrap(
+        $request->query('departments', [])
+      )
+    )
+      ->map(
+        fn($department) => trim(
+          (string) $department
+        )
+      )
+      ->filter()
+      ->unique()
+      ->values()
+      ->all();
+
     $selectedCompanies = collect(
       Arr::wrap(
         $request->query('companies', [])
@@ -117,15 +147,113 @@ class SetPicController extends Controller
       ->orderBy('source')
       ->pluck('source');
 
+    /*
+ * ============================================================
+ * HEAD OFFICE DIVISIONS
+ * ============================================================
+ *
+ * Division hanya diambil dari employee:
+ * - active
+ * - belum punya PIC
+ * - source HEAD OFFICE
+ */
+    $headOfficeDivisionCodes = employee_details::query()
+      ->whereNull('pic_nip')
+      ->where('active', 1)
+      ->whereNotNull('business_unit_org_element_1')
+      ->where(
+        'business_unit_org_element_1',
+        '!=',
+        ''
+      )
+      ->whereHas(
+        'sourceData',
+        function ($query) {
+          $query->whereRaw(
+            'UPPER(TRIM(source)) = ?',
+            ['HEAD OFFICE']
+          );
+        }
+      )
+      ->distinct()
+      ->pluck(
+        'business_unit_org_element_1'
+      );
+
+    $divisions = DB::table('business_units')
+      ->whereIn(
+        'business_unit_code',
+        $headOfficeDivisionCodes
+      )
+      ->orderBy('business_unit_name')
+      ->get([
+        'business_unit_code',
+        'business_unit_name',
+      ]);
+
+    /*
+ * ============================================================
+ * STORE DEPARTMENTS / BRAND
+ * ============================================================
+ *
+ * departments tidak memiliki kolom source.
+ *
+ * Karena itu department STORE ditentukan dari employee
+ * yang source-nya STORE.
+ */
+    $storeDepartmentCodes = employee_details::query()
+      ->whereNull('pic_nip')
+      ->where('active', 1)
+      ->whereNotNull('department_org_element_2')
+      ->where(
+        'department_org_element_2',
+        '!=',
+        ''
+      )
+      ->whereHas(
+        'sourceData',
+        function ($query) {
+          $query->whereRaw(
+            'UPPER(TRIM(source)) = ?',
+            ['STORE']
+          );
+        }
+      )
+      ->distinct()
+      ->pluck(
+        'department_org_element_2'
+      );
+
+    $departments = DB::table('departments')
+      ->whereIn(
+        'department_code',
+        $storeDepartmentCodes
+      )
+      ->orderBy('department_name')
+      ->get([
+        'department_code',
+        'department_name',
+      ]);
+
     return view('pages.set-pic', [
       'title' => 'Set PIC',
+
       'employees' => $employees,
       'pics' => $pics,
+
       'companies' => $companies,
       'sources' => $sources,
+
+      'divisions' => $divisions,
+      'departments' => $departments,
+
       'search' => $search,
+
       'selectedCompanies' => $selectedCompanies,
       'selectedSources' => $selectedSources,
+
+      'selectedDivisions' => $selectedDivisions,
+      'selectedDepartments' => $selectedDepartments,
     ]);
   }
 
@@ -615,6 +743,52 @@ class SetPicController extends Controller
       ->values()
       ->all();
 
+    $selectedDivisions = collect(
+      Arr::wrap(
+        $request->query('divisions', [])
+      )
+    )
+      ->map(
+        fn($division) => trim(
+          (string) $division
+        )
+      )
+      ->filter()
+      ->unique()
+      ->values()
+      ->all();
+
+    $selectedDepartments = collect(
+      Arr::wrap(
+        $request->query('departments', [])
+      )
+    )
+      ->map(
+        fn($department) => trim(
+          (string) $department
+        )
+      )
+      ->filter()
+      ->unique()
+      ->values()
+      ->all();
+
+    $hasHeadOffice = collect(
+      $selectedSources
+    )->contains(
+      fn($source) =>
+      strtoupper(trim((string) $source))
+        === 'HEAD OFFICE'
+    );
+
+    $hasStore = collect(
+      $selectedSources
+    )->contains(
+      fn($source) =>
+      strtoupper(trim((string) $source))
+        === 'STORE'
+    );
+
     $employeeQuery = employee_details::query()
       ->select([
         'id',
@@ -623,12 +797,39 @@ class SetPicController extends Controller
         'display_name',
         'company',
         'pic_nip',
+
+        'business_unit_org_element_1',
+        'department_org_element_2',
       ])
 
-      /*
-         * Dibutuhkan saat export agar kita bisa
-         * mengambil nama source.
+      ->addSelect([
+        /*
+         * Nama Division.
          */
+        'division_name' => DB::table(
+          'business_units'
+        )
+          ->select('business_unit_name')
+          ->whereColumn(
+            'business_units.business_unit_code',
+            'employee_details.business_unit_org_element_1'
+          )
+          ->limit(1),
+
+        /*
+         * Nama Department.
+         */
+        'department_name' => DB::table(
+          'departments'
+        )
+          ->select('department_name')
+          ->whereColumn(
+            'departments.department_code',
+            'employee_details.department_org_element_2'
+          )
+          ->limit(1),
+      ])
+
       ->with('sourceData')
 
       ->whereNull('pic_nip')
@@ -679,6 +880,33 @@ class SetPicController extends Controller
             $selectedSources
           );
         }
+      );
+    }
+
+    /*
+ * Division hanya berlaku jika HEAD OFFICE dipilih.
+ */
+    if (
+      $hasHeadOffice &&
+      !empty($selectedDivisions)
+    ) {
+      $employeeQuery->whereIn(
+        'business_unit_org_element_1',
+        $selectedDivisions
+      );
+    }
+
+    /*
+ * Department / Brand hanya berlaku
+ * apabila STORE dipilih.
+ */
+    if (
+      $hasStore &&
+      !empty($selectedDepartments)
+    ) {
+      $employeeQuery->whereIn(
+        'department_org_element_2',
+        $selectedDepartments
       );
     }
 

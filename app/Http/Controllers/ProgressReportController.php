@@ -327,6 +327,167 @@ class ProgressReportController extends Controller
             );
 
         /*
+        * ============================================================
+        * 6. PROGRESS REPORT BY PIC
+        * ============================================================
+        *
+        * Headcount:
+        * jumlah employee yang menjadi tanggung jawab PIC.
+        *
+        * Completed:
+        * employee yang seluruh field HR + employee sudah lengkap.
+        *
+        * Percentage:
+        * berdasarkan seluruh field yang sudah terisi.
+        */
+
+        /*
+        * Ambil headcount + completed fields per PIC.
+        *
+        * LEFT JOIN digunakan agar employee yang belum memiliki PIC
+        * juga dapat terlihat sebagai "BELUM ADA PIC".
+        */
+        $picRows = employee_details::query()
+            ->leftJoin(
+                'pics',
+                'employee_details.pic_nip',
+                '=',
+                'pics.nip'
+            )
+            ->selectRaw(
+                'employee_details.pic_nip AS pic_nip'
+            )
+            ->selectRaw(
+                "
+        COALESCE(
+            pics.name,
+            'BELUM ADA PIC'
+        ) AS pic_name
+        "
+            )
+            ->selectRaw(
+                'COUNT(employee_details.id) AS headcount'
+            )
+            ->selectRaw(
+                "
+        COALESCE(
+            ({$completedFieldsExpression}),
+            0
+        ) AS completed_fields
+        ",
+                $bindings
+            )
+            ->groupBy(
+                'employee_details.pic_nip',
+                'pics.name'
+            )
+            ->orderByRaw(
+                'employee_details.pic_nip IS NULL DESC'
+            )
+            ->orderBy(
+                'pics.name'
+            )
+            ->get();
+
+        /*
+        * Jumlah employee complete per PIC.
+        *
+        * Menggunakan scope yang sama dengan dashboard:
+        * - hrComplete()
+        * - employeeDataComplete()
+        */
+        $completedEmployeesByPic = employee_details::query()
+            ->hrComplete()
+            ->employeeDataComplete()
+            ->selectRaw(
+                'pic_nip, COUNT(*) AS completed_count'
+            )
+            ->groupBy('pic_nip')
+            ->get()
+            ->mapWithKeys(
+                fn($row) => [
+                    $row->pic_nip ?? '__NULL__'
+                    => (int) $row->completed_count,
+                ]
+            );
+
+        $picProgressReports = $picRows
+            ->map(
+                function ($row) use (
+                    $requiredFieldsPerEmployee,
+                    $completedEmployeesByPic
+                ) {
+                    $picKey =
+                        $row->pic_nip ?? '__NULL__';
+
+                    $headcount =
+                        (int) $row->headcount;
+
+                    /*
+             * Jumlah employee yang benar-benar
+             * sudah lengkap seluruh profil.
+             */
+                    $completedEmployees =
+                        (int) (
+                            $completedEmployeesByPic[$picKey] ?? 0
+                        );
+
+                    $notCompletedEmployees = max(
+                        $headcount -
+                            $completedEmployees,
+                        0
+                    );
+
+                    /*
+             * Field-level percentage.
+             */
+                    $completedFields =
+                        (int) $row->completed_fields;
+
+                    $totalFields =
+                        $headcount *
+                        $requiredFieldsPerEmployee;
+
+                    $percentage =
+                        $totalFields > 0
+                        ? round(
+                            (
+                                $completedFields /
+                                $totalFields
+                            ) * 100,
+                            2
+                        )
+                        : 0;
+
+                    return [
+                        'nip' =>
+                        $row->pic_nip,
+
+                        'name' =>
+                        $row->pic_name,
+
+                        'headcount' =>
+                        $headcount,
+
+                        'completed' =>
+                        $completedEmployees,
+
+                        'not_completed' =>
+                        $notCompletedEmployees,
+
+                        'completed_fields' =>
+                        $completedFields,
+
+                        'total_fields' =>
+                        $totalFields,
+
+                        'percentage' =>
+                        $percentage,
+                    ];
+                }
+            );
+
+        /*
          * Jangan mengambil rata-rata percentage Source.
          *
          * Hitung kembali:
@@ -345,6 +506,50 @@ class ProgressReportController extends Controller
                 2
             )
             : 0;
+
+        /*
+        * ============================================================
+        * TOTAL PROGRESS BY PIC
+        * ============================================================
+        */
+
+        $totalPicHeadcount =
+            $picProgressReports->sum(
+                'headcount'
+            );
+
+        $totalPicCompletedEmployees =
+            $picProgressReports->sum(
+                'completed'
+            );
+
+        $totalPicNotCompletedEmployees =
+            $picProgressReports->sum(
+                'not_completed'
+            );
+
+        $totalPicCompletedFields =
+            $picProgressReports->sum(
+                'completed_fields'
+            );
+
+        $totalPicFields =
+            $picProgressReports->sum(
+                'total_fields'
+            );
+
+        $totalPicPercentage =
+            $totalPicFields > 0
+            ? round(
+                (
+                    $totalPicCompletedFields /
+                    $totalPicFields
+                ) * 100,
+                2
+            )
+            : 0;
+
+
 
         return view(
             'pages.progress-report',
@@ -378,6 +583,21 @@ class ProgressReportController extends Controller
 
                 'totalNotCompletedEmployees' =>
                 $totalNotCompletedEmployees,
+
+                'picProgressReports' =>
+                $picProgressReports,
+
+                'totalPicHeadcount' =>
+                $totalPicHeadcount,
+
+                'totalPicCompletedEmployees' =>
+                $totalPicCompletedEmployees,
+
+                'totalPicNotCompletedEmployees' =>
+                $totalPicNotCompletedEmployees,
+
+                'totalPicPercentage' =>
+                $totalPicPercentage,
             ]
         );
     }

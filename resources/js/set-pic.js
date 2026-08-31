@@ -25,6 +25,30 @@ document.addEventListener('DOMContentLoaded', () => {
         'clear-source-filters'
     );
 
+    const clearDivisionButton = document.getElementById(
+        'clear-division-filters'
+    );
+
+    const clearDepartmentButton = document.getElementById(
+        'clear-department-filters'
+    );
+
+    const divisionFilterWrapper = document.getElementById(
+        'set-pic-division-filter-wrapper'
+    );
+
+    const departmentFilterWrapper = document.getElementById(
+        'set-pic-department-filter-wrapper'
+    );
+
+    const divisionFilterLabel = document.getElementById(
+        'set-pic-division-filter-label'
+    );
+
+    const departmentFilterLabel = document.getElementById(
+        'set-pic-department-filter-label'
+    );
+
     const clearSelectionButton = document.getElementById(
         'clear-employee-selection'
     );
@@ -123,6 +147,34 @@ document.addEventListener('DOMContentLoaded', () => {
                         checkbox.value
                     );
                 });
+            
+            /*
+            * DIVISION
+            */
+            document
+                .querySelectorAll(
+                    ".division-filter-checkbox:checked"
+                )
+                .forEach((checkbox) => {
+                    url.searchParams.append(
+                        "divisions[]",
+                        checkbox.value
+                    );
+                });
+
+            /*
+            * DEPARTMENT
+            */
+            document
+                .querySelectorAll(
+                    ".department-filter-checkbox:checked"
+                )
+                .forEach((checkbox) => {
+                    url.searchParams.append(
+                        "departments[]",
+                        checkbox.value
+                    );
+                });
 
             window.location.href =
                 url.toString();
@@ -188,6 +240,22 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     };
 
+    const getDivisionCheckboxes = () => {
+        return Array.from(
+            document.querySelectorAll(
+                '.division-filter-checkbox'
+            )
+        );
+    };
+
+    const getDepartmentCheckboxes = () => {
+        return Array.from(
+            document.querySelectorAll(
+                '.department-filter-checkbox'
+            )
+        );
+    };
+
     /*
      * Company yang sedang dipilih.
      */
@@ -214,12 +282,98 @@ document.addEventListener('DOMContentLoaded', () => {
             );
     };
 
+    const getSelectedDivisions = () => {
+        return getDivisionCheckboxes()
+            .filter(
+                (checkbox) => checkbox.checked
+            )
+            .map(
+                (checkbox) => checkbox.value
+            );
+    };
+
+    const getSelectedDepartments = () => {
+        return getDepartmentCheckboxes()
+            .filter(
+                (checkbox) => checkbox.checked
+            )
+            .map(
+                (checkbox) => checkbox.value
+            );
+    };
+
+    const hasSelectedSource = (sourceName) => {
+        return getSelectedSources().some(
+            (source) =>
+                String(source)
+                    .trim()
+                    .toUpperCase() ===
+                sourceName.toUpperCase()
+        );
+    };
+
+    const syncSourceDependentFilters = () => {
+        const hasHeadOffice =
+            hasSelectedSource('HEAD OFFICE');
+
+        const hasStore =
+            hasSelectedSource('STORE');
+
+        /*
+        * HEAD OFFICE
+        * -> tampilkan Division.
+        */
+        divisionFilterWrapper?.classList.toggle(
+            'hidden',
+            !hasHeadOffice
+        );
+
+        /*
+        * STORE
+        * -> tampilkan Department / Brand.
+        */
+        departmentFilterWrapper?.classList.toggle(
+            'hidden',
+            !hasStore
+        );
+
+        /*
+        * Jika HEAD OFFICE dilepas,
+        * reset Division.
+        */
+        if (!hasHeadOffice) {
+            getDivisionCheckboxes().forEach(
+                (checkbox) => {
+                    checkbox.checked = false;
+                }
+            );
+        }
+
+        /*
+        * Jika STORE dilepas,
+        * reset Department.
+        */
+        if (!hasStore) {
+            getDepartmentCheckboxes().forEach(
+                (checkbox) => {
+                    checkbox.checked = false;
+                }
+            );
+        }
+    };
+
     const updateFilterLabels = () => {
         const selectedCompanies =
             getSelectedCompanies();
 
         const selectedSources =
             getSelectedSources();
+
+        const selectedDivisions =
+            getSelectedDivisions();
+
+        const selectedDepartments =
+            getSelectedDepartments();
 
         /*
         * Company label
@@ -244,6 +398,32 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 sourceFilterLabel.textContent =
                     'Filter Source';
+            }
+        }
+
+        /*
+        * Division label
+        */
+        if (divisionFilterLabel) {
+            if (selectedDivisions.length > 0) {
+                divisionFilterLabel.textContent =
+                    `Division (${selectedDivisions.length})`;
+            } else {
+                divisionFilterLabel.textContent =
+                    'Filter Division';
+            }
+        }
+
+        /*
+        * Department label
+        */
+        if (departmentFilterLabel) {
+            if (selectedDepartments.length > 0) {
+                departmentFilterLabel.textContent =
+                    `Department (${selectedDepartments.length})`;
+            } else {
+                departmentFilterLabel.textContent =
+                    'Filter Department / Brand';
             }
         }
     };
@@ -292,6 +472,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 url.searchParams.append(
                     'sources[]',
                     source
+                );
+            }
+        );
+
+        /*
+        * Division filter.
+        */
+        getSelectedDivisions().forEach(
+            (division) => {
+                url.searchParams.append(
+                    'divisions[]',
+                    division
+                );
+            }
+        );
+
+        /*
+        * Department filter.
+        */
+        getSelectedDepartments().forEach(
+            (department) => {
+                url.searchParams.append(
+                    'departments[]',
+                    department
                 );
             }
         );
@@ -802,6 +1006,50 @@ document.addEventListener('DOMContentLoaded', () => {
             checkbox.addEventListener(
                 'change',
                 () => {
+                    /*
+                    * Tampilkan / sembunyikan
+                    * filter turunan.
+                    */
+                    syncSourceDependentFilters();
+
+                    updateFilterLabels();
+
+                    loadEmployees();
+                }
+            );
+        }
+    );
+
+    /*
+    * ============================================================
+    * DIVISION FILTER
+    * ============================================================
+    */
+
+    getDivisionCheckboxes().forEach(
+        (checkbox) => {
+            checkbox.addEventListener(
+                'change',
+                () => {
+                    updateFilterLabels();
+
+                    loadEmployees();
+                }
+            );
+        }
+    );
+
+    /*
+    * ============================================================
+    * DEPARTMENT FILTER
+    * ============================================================
+    */
+
+    getDepartmentCheckboxes().forEach(
+        (checkbox) => {
+            checkbox.addEventListener(
+                'change',
+                () => {
                     updateFilterLabels();
 
                     loadEmployees();
@@ -841,6 +1089,56 @@ document.addEventListener('DOMContentLoaded', () => {
         'click',
         () => {
             getSourceCheckboxes().forEach(
+                (checkbox) => {
+                    checkbox.checked = false;
+                }
+            );
+
+            /*
+            * Source kosong berarti:
+            * - Division di-reset.
+            * - Department di-reset.
+            * - kedua filter disembunyikan.
+            */
+            syncSourceDependentFilters();
+
+            updateFilterLabels();
+
+            loadEmployees();
+        }
+    );
+
+    /*
+    * ============================================================
+    * CLEAR DIVISION FILTER
+    * ============================================================
+    */
+
+    clearDivisionButton?.addEventListener(
+        'click',
+        () => {
+            getDivisionCheckboxes().forEach(
+                (checkbox) => {
+                    checkbox.checked = false;
+                }
+            );
+
+            updateFilterLabels();
+
+            loadEmployees();
+        }
+    );
+
+    /*
+    * ============================================================
+    * CLEAR DEPARTMENT FILTER
+    * ============================================================
+    */
+
+    clearDepartmentButton?.addEventListener(
+        'click',
+        () => {
+            getDepartmentCheckboxes().forEach(
                 (checkbox) => {
                     checkbox.checked = false;
                 }
@@ -922,6 +1220,8 @@ document.addEventListener('DOMContentLoaded', () => {
     syncHiddenInputs();
 
     bindTableEvents();
+
+    syncSourceDependentFilters();
 
     updateFilterLabels();
 });
