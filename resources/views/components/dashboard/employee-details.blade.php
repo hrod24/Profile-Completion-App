@@ -60,7 +60,7 @@
                         class="mt-1 flex flex-wrap items-center
                                gap-x-3 gap-y-1 text-xs text-slate-500">
                         <span>
-                            Employee ID:
+                            NIP:
                             <strong class="font-mono text-slate-700">
                                 {{ $employee->employee_id }}
                             </strong>
@@ -83,7 +83,22 @@
                                 {{ $source }}
                             </strong>
                         </span>
+
+
                     </div>
+                    <p class=" text-xs text-slate-500 mt-1">
+                        Division:
+                        <strong class="text-slate-700">
+                            {{ $employee->businessUnit->business_unit_name ?? 'Division not available' }}
+                        </strong>
+                    </p>
+
+                    <p class=" text-xs text-slate-500 mt-1">
+                        Department:
+                        <strong class="text-slate-700">
+                            {{ $employee->department->department_name ?? 'Department not available' }}
+                        </strong>
+                    </p>
                 </div>
             </div>
 
