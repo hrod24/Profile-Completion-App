@@ -440,6 +440,18 @@ class SetPicController extends Controller
             ->sourceData
             ?->source
             ?? '',
+
+          'division' =>
+          $employee
+            ->businessUnit
+            ?->business_unit_name
+            ?? '',
+
+          'department' =>
+          $employee
+            ->department
+            ?->department_name
+            ?? '',
         ];
       }
     );

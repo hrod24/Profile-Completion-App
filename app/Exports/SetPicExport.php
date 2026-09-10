@@ -41,6 +41,8 @@ class SetPicExport implements
       'pic',
       'company',
       'source',
+      'division',
+      'department',
     ];
   }
 
@@ -60,7 +62,7 @@ class SetPicExport implements
                  */
 
         $sheet
-          ->getStyle('A1:E1')
+          ->getStyle('A1:G1')
           ->getFont()
           ->setBold(true);
 
@@ -87,7 +89,7 @@ class SetPicExport implements
                  */
 
         $sheet->setCellValue(
-          'G1',
+          'I1',
           'PIC_LIST'
         );
 
@@ -96,12 +98,12 @@ class SetPicExport implements
           $index => $picName
         ) {
           /*
-                     * Nama PIC dimulai dari G2.
+                     * Nama PIC dimulai dari I2.
                      */
           $rowNumber = $index + 2;
 
           $sheet->setCellValue(
-            "G{$rowNumber}",
+            "I{$rowNumber}",
             $picName
           );
         }
@@ -110,7 +112,7 @@ class SetPicExport implements
                  * Hide kolom helper PIC.
                  */
         $sheet
-          ->getColumnDimension('G')
+          ->getColumnDimension('I')
           ->setVisible(false);
 
         /*
@@ -146,17 +148,17 @@ class SetPicExport implements
           $employeeCount + 1;
 
         /*
-                 * PIC pertama = G2.
+                 * PIC pertama = I2.
                  */
         $lastPicRow =
           $picCount + 1;
 
         /*
                  * Dropdown mengambil data dari
-                 * hidden column G.
+                 * hidden column I.
                  */
         $picListFormula =
-          '$G$2:$G$' .
+          '$I$2:$I$' .
           $lastPicRow;
 
         /*
@@ -235,7 +237,7 @@ class SetPicExport implements
 
         $sheet
           ->setAutoFilter(
-            "A1:E{$lastEmployeeRow}"
+            "A1:G{$lastEmployeeRow}"
           );
       },
     ];

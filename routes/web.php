@@ -17,6 +17,15 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+Route::view(
+  '/attendance-preview',
+  'attendance.division-preview'
+);
+Route::view(
+  '/all-attendance-preview',
+  'attendance.all-division-attendance'
+);
+
 Route::get('/', function (Request $request) {
   $user = $request->user();
 
