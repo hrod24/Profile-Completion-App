@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
+use App\Models\BusinessUnit;
+use App\Models\Department;
 use App\Models\employee_details;
 use Illuminate\Support\Facades\DB;
 
@@ -1096,5 +1099,349 @@ class ProgressReportController extends Controller
 
             $bindings,
         ];
+    }
+
+    public function groupEmployees(
+        Request $request,
+        string $source,
+        string $groupCode
+    ) {
+        $source = strtoupper(
+            trim(
+                urldecode($source)
+            )
+        );
+
+        $status = strtolower(
+            trim(
+                (string) $request->query(
+                    'status',
+                    'all'
+                )
+            )
+        );
+
+        $allowedStatuses = [
+            'all',
+            'completed',
+            'not_completed',
+        ];
+
+        if (!in_array($status, $allowedStatuses, true)) {
+            $status = 'all';
+        }
+
+        /*
+     * Hanya HEAD OFFICE dan STORE yang memiliki
+     * drill-down group → employee.
+     */
+        abort_unless(
+            in_array(
+                $source,
+                [
+                    'HEAD OFFICE',
+                    'STORE',
+                    'WAREHOUSE',
+                ],
+                true
+            ),
+            404
+        );
+
+        $isUnregistered =
+            $groupCode === '__NULL__';
+
+        /*
+        * ============================================================
+        * HEAD OFFICE
+        * ============================================================
+        */
+        if ($source === 'HEAD OFFICE') {
+            $dimensionLabel =
+                'Business Unit';
+
+            $groupColumn =
+                'business_unit_org_element_1';
+
+            if ($groupCode === '__NULL__') {
+                $groupName =
+                    'BELUM TERDAFTAR';
+
+                $resolvedGroupCode = null;
+            } else {
+                $businessUnit =
+                    BusinessUnit::query()
+                    ->where(
+                        'business_unit_code',
+                        $groupCode
+                    )
+                    ->firstOrFail();
+
+                $groupName =
+                    $businessUnit
+                    ->business_unit_name;
+
+                $resolvedGroupCode =
+                    $businessUnit
+                    ->business_unit_code;
+            }
+        }
+
+        /*
+        * ============================================================
+        * STORE
+        * ============================================================
+        */ elseif ($source === 'STORE') {
+            $dimensionLabel =
+                'Department';
+
+            $groupColumn =
+                'department_org_element_2';
+
+            if ($groupCode === '__NULL__') {
+                $groupName =
+                    'BELUM TERDAFTAR';
+
+                $resolvedGroupCode = null;
+            } else {
+                $department =
+                    Department::query()
+                    ->where(
+                        'department_code',
+                        $groupCode
+                    )
+                    ->firstOrFail();
+
+                $groupName =
+                    $department
+                    ->department_name;
+
+                $resolvedGroupCode =
+                    $department
+                    ->department_code;
+            }
+        }
+
+        /*
+        * ============================================================
+        * WAREHOUSE
+        * ============================================================
+        *
+        * Warehouse tidak membutuhkan Business Unit
+        * maupun Department.
+        */ else {
+            abort_unless(
+                $groupCode === '__ALL__',
+                404
+            );
+
+            $dimensionLabel =
+                'Warehouse';
+
+            $groupColumn = null;
+
+            $groupName =
+                'WAREHOUSE';
+
+            $resolvedGroupCode = null;
+        }
+
+        /*
+     * ============================================================
+     * BASE QUERY
+     * ============================================================
+     *
+     * Filter:
+     *
+     * Source + Business Unit/Department.
+     */
+        $groupQuery =
+            employee_details::query()
+            ->whereHas(
+                'sourceData',
+                function ($query) use ($source) {
+                    $query->where(
+                        'source',
+                        $source
+                    );
+                }
+            );
+
+        /*
+        * HEAD OFFICE dan STORE memiliki group.
+        * WAREHOUSE cukup berdasarkan source.
+        */
+        if ($groupColumn !== null) {
+            if ($resolvedGroupCode === null) {
+                $groupQuery->where(
+                    function ($query) use ($groupColumn) {
+                        $query
+                            ->whereNull($groupColumn)
+                            ->orWhere(
+                                $groupColumn,
+                                ''
+                            );
+                    }
+                );
+            } else {
+                $groupQuery->where(
+                    $groupColumn,
+                    $resolvedGroupCode
+                );
+            }
+        }
+
+        /*
+     * ============================================================
+     * SUMMARY
+     * ============================================================
+     */
+        $headcount =
+            (clone $groupQuery)
+            ->count();
+
+        $completedEmployees =
+            (clone $groupQuery)
+            ->hrComplete()
+            ->employeeDataComplete()
+            ->count();
+
+        $notCompletedEmployees = max(
+            $headcount -
+                $completedEmployees,
+            0
+        );
+
+        /*
+     * ============================================================
+     * SEARCH
+     * ============================================================
+     *
+     * Search hanya memengaruhi tabel employee.
+     * Summary tetap menunjukkan seluruh group.
+     */
+        $search = trim(
+            (string) $request->query(
+                'search',
+                ''
+            )
+        );
+
+        $employeeQuery =
+            clone $groupQuery;
+
+        /*
+        * ============================================================
+        * FILTER STATUS COMPLETION
+        * ============================================================
+        */
+        if ($status === 'completed') {
+            /*
+            * Hanya employee yang seluruh:
+            *
+            * - required field HR
+            * - required field Employee
+            *
+            * sudah lengkap.
+            */
+            $employeeQuery
+                ->hrComplete()
+                ->employeeDataComplete();
+        }
+
+        if ($status === 'not_completed') {
+            /*
+            * Cari ID employee yang benar-benar sudah complete.
+            */
+            $completedEmployeeIds =
+                employee_details::query()
+                ->select('id')
+                ->hrComplete()
+                ->employeeDataComplete();
+
+            /*
+            * Employee selain ID di atas berarti belum complete.
+            *
+            * Filter Source dan group tetap berasal dari
+            * $groupQuery pada outer query.
+            */
+            $employeeQuery->whereNotIn(
+                'id',
+                $completedEmployeeIds
+            );
+        }
+
+        if ($search !== '') {
+            $employeeQuery->where(
+                function ($query) use ($search) {
+                    $query
+                        ->where(
+                            'employee_id',
+                            'like',
+                            "%{$search}%"
+                        )
+                        ->orWhere(
+                            'display_name',
+                            'like',
+                            "%{$search}%"
+                        );
+                }
+            );
+        }
+
+        /*
+     * ============================================================
+     * EMPLOYEE LIST
+     * ============================================================
+     */
+        $employees =
+            $employeeQuery
+            ->with([
+                'pic',
+                'sourceData',
+                'businessUnit',
+                'department',
+            ])
+            ->orderBy('display_name')
+            ->orderBy('employee_id')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view(
+            'pages.progress-report-employees',
+            [
+                'title' =>
+                "Progress Report - {$groupName}",
+
+                'source' =>
+                $source,
+
+                'dimensionLabel' =>
+                $dimensionLabel,
+
+                'groupName' =>
+                $groupName,
+
+                'groupCode' =>
+                $resolvedGroupCode,
+
+                'headcount' =>
+                $headcount,
+
+                'completedEmployees' =>
+                $completedEmployees,
+
+                'notCompletedEmployees' =>
+                $notCompletedEmployees,
+
+                'employees' =>
+                $employees,
+
+                'search' =>
+                $search,
+
+                'status' => $status,
+            ]
+        );
     }
 }

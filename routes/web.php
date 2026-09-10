@@ -57,6 +57,16 @@ Route::middleware([
     [DashboardController::class, 'index']
   )->name('dashboard');
 
+  Route::get(
+    '/progress-report/{source}/group/{groupCode}',
+    [ProgressReportController::class, 'groupEmployees']
+  )->name('progress-report.group-employees');
+
+  Route::get(
+    '/progress-report/{source}',
+    [ProgressReportController::class, 'source']
+  )->name('progress-report.source');
+
   Route::get('/progress-report', [ProgressReportController::class, 'index'])
     ->name('progress-report.index');
 
