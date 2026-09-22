@@ -58,9 +58,15 @@ Route::middleware([
   )->name('dashboard');
 
   Route::get(
+    '/progress-report/{source}/not-completed',
+    [ProgressReportController::class, 'sourceNotCompletedEmployees']
+  )->name('progress-report.source-not-completed');
+
+  Route::get(
     '/progress-report/{source}/group/{groupCode}',
     [ProgressReportController::class, 'groupEmployees']
   )->name('progress-report.group-employees');
+  
 
   Route::get(
     '/progress-report/{source}',

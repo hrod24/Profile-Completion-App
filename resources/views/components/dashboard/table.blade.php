@@ -73,7 +73,7 @@
 
         <div
             class="relative flex max-h-[94vh] w-full
-               max-w-4xl flex-col overflow-hidden
+               max-w-5xl flex-col overflow-hidden
                rounded-2xl border border-slate-200
                bg-white shadow-2xl">
             <header

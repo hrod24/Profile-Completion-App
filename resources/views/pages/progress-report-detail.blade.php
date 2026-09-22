@@ -1,12 +1,10 @@
 <x-layout :title="$title">
     <x-app-shell title="Progress Report — {{ $source }}" subtitle="Profile completion for {{ $source }}.">
-        <section class="minimal-card overflow-hidden">
+        <section class="overflow-hidden minimal-card">
 
             {{-- Header --}}
             <div
-                class="flex flex-col gap-3 border-b border-slate-200
-                       px-5 py-4 sm:flex-row
-                       sm:items-center sm:justify-between">
+                class="flex flex-col gap-3 px-5 py-4 border-b border-slate-200 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="text-sm font-bold text-slate-900">
                         {{ $source }} Completion
@@ -21,12 +19,9 @@
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[950px] table-auto text-left">
 
-                    <thead class="border-b border-stone-200
-                               bg-stone-50/90 text-center">
+                    <thead class="text-center border-b border-stone-200 bg-stone-50/90">
                         <tr>
-                            <th
-                                class="w-16 px-4 py-3
-                                       text-xs font-bold text-slate-500">
+                            <th class="w-16 px-4 py-3 text-xs font-bold text-slate-500">
                                 No.
                             </th>
 
@@ -63,7 +58,7 @@
                         </tr>
                     </thead>
 
-                    <tbody class="divide-y divide-stone-100 bg-white">
+                    <tbody class="bg-white divide-y divide-stone-100">
                         @forelse ($reports as $report)
                             @php
                                 $percentage = min(max((float) $report['percentage'], 0), 100);
@@ -136,21 +131,15 @@
                                     : null;
                             @endphp
 
-                            <tr 
-                                tabindex="0"
-                                role="link" >
+                            <tr tabindex="0" role="link">
                                 <td class="px-4 py-3 text-center">
                                     {{ $loop->iteration }}
                                 </td>
 
                                 <td class="px-4 py-3">
-                                    <div class="flex items-center
-               justify-between gap-3">
+                                    <div class="flex items-center justify-between gap-3">
                                         <div class="min-w-0">
-                                            <p
-                                                class="truncate text-sm
-                                                font-semibold
-                                                text-slate-900">
+                                            <p class="text-sm font-semibold truncate text-slate-900">
                                                 {{ $report['name'] }}
                                             </p>
 
@@ -165,12 +154,8 @@
 
                                         @if ($canDrillDown)
                                             <div
-                                                class="flex h-8 w-8 shrink-0
-                                                items-center justify-center
-                                                rounded-lg text-slate-400
-                                                transition
-                                                group-hover:text-kanmo-600">
-                                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"
+                                                class="flex items-center justify-center w-8 h-8 transition rounded-lg shrink-0 text-slate-400 group-hover:text-kanmo-600">
+                                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"
                                                     stroke="currentColor" stroke-width="2">
                                                     <path stroke-linecap="round" stroke-linejoin="round"
                                                         d="m9 18 6-6-6-6" />
@@ -182,14 +167,7 @@
 
                                 <td class="px-4 py-3 text-center">
                                     <a href="{{ $headcountUrl }}" onclick="event.stopPropagation()"
-                                        class="inline-flex min-w-12 items-center
-                                        justify-center rounded-lg
-                                        px-3 py-2 text-sm font-bold
-                                        text-slate-700 transition
-                                        hover:bg-slate-100
-                                        hover:text-slate-900
-                                        focus:outline-none
-                                        focus:ring-4 focus:ring-slate-100"
+                                        class="inline-flex items-center justify-center px-3 py-2 text-sm font-bold transition rounded-lg min-w-12 text-slate-700 hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-100"
                                         title="View all employees">
                                         {{ number_format($report['headcount'], 0, ',', '.') }}
                                     </a>
@@ -197,15 +175,7 @@
 
                                 <td class="px-4 py-3 text-center">
                                     <a href="{{ $completedUrl }}" onclick="event.stopPropagation()"
-                                        class="inline-flex min-w-12 items-center
-                                        justify-center rounded-lg
-                                        bg-emerald-50/60
-                                        px-3 py-2 text-sm font-bold
-                                        text-emerald-600 transition
-                                        hover:bg-emerald-100
-                                        hover:text-emerald-700
-                                        focus:outline-none
-                                        focus:ring-4 focus:ring-emerald-100"
+                                        class="inline-flex items-center justify-center px-3 py-2 text-sm font-bold transition rounded-lg min-w-12 bg-emerald-50/60 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-100"
                                         title="View completed employees">
                                         {{ number_format($report['completed'], 0, ',', '.') }}
                                     </a>
@@ -213,15 +183,7 @@
 
                                 <td class="px-4 py-3 text-center">
                                     <a href="{{ $notCompletedUrl }}" onclick="event.stopPropagation()"
-                                        class="inline-flex min-w-12 items-center
-                                        justify-center rounded-lg
-                                        bg-rose-50/60
-                                        px-3 py-2 text-sm font-bold
-                                        text-rose-600 transition
-                                        hover:bg-rose-100
-                                        hover:text-rose-700
-                                        focus:outline-none
-                                        focus:ring-4 focus:ring-rose-100"
+                                        class="inline-flex items-center justify-center px-3 py-2 text-sm font-bold transition rounded-lg min-w-12 bg-rose-50/60 text-rose-600 hover:bg-rose-100 hover:text-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100"
                                         title="View employees that are not completed">
                                         {{ number_format($report['not_completed'], 0, ',', '.') }}
                                     </a>
@@ -229,10 +191,7 @@
 
                                 <td class="px-4 py-3">
                                     <div class="min-w-[280px]">
-                                        <div
-                                            class="mb-2 flex
-                                                   items-center
-                                                   justify-between">
+                                        <div class="flex items-center justify-between mb-2">
                                             <span
                                                 class="text-sm
                                                        font-extrabold
@@ -240,9 +199,7 @@
                                                 {{ number_format($percentage, 2, ',', '.') }}%
                                             </span>
 
-                                            <span
-                                                class="text-xs
-                                                       text-slate-400">
+                                            <span class="text-xs text-slate-400">
                                                 {{ number_format($report['completed_fields'], 0, ',', '.') }}
                                                 /
                                                 {{ number_format($report['total_fields'], 0, ',', '.') }}
@@ -250,10 +207,7 @@
                                             </span>
                                         </div>
 
-                                        <div
-                                            class="h-2 overflow-hidden
-                                                   rounded-full
-                                                   bg-stone-200">
+                                        <div class="h-2 overflow-hidden rounded-full bg-stone-200">
                                             <div class="h-full rounded-full
                                                        {{ $meta['bar'] }}"
                                                 style="width:
@@ -265,10 +219,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6"
-                                    class="px-6 py-16
-                                           text-center text-sm
-                                           text-slate-500">
+                                <td colspan="6" class="px-6 py-16 text-sm text-center text-slate-500">
                                     No data available.
                                 </td>
                             </tr>
@@ -276,61 +227,44 @@
                     </tbody>
 
                     @if ($reports->isNotEmpty())
-                        <tfoot class="border-t-2
-                                   border-stone-200 bg-stone-50">
+                        <tfoot class="border-t-2 border-stone-200 bg-stone-50">
                             <tr>
-                                <td colspan="2"
-                                    class="px-4 py-4
-                                           font-extrabold
-                                           text-slate-900">
+                                <td colspan="2" class="px-4 py-4 font-extrabold text-slate-900">
                                     TOTAL
                                 </td>
 
-                                <td
-                                    class="px-4 py-4
-                                           text-center font-extrabold">
+                                <td class="px-4 py-4 font-extrabold text-center">
                                     {{ number_format($totalHeadcount, 0, ',', '.') }}
                                 </td>
 
-                                <td
-                                    class="px-4 py-4 text-center
-                                           font-extrabold
-                                           text-emerald-600">
+                                <td class="px-4 py-4 font-extrabold text-center text-emerald-600">
                                     {{ number_format($totalCompletedEmployees, 0, ',', '.') }}
                                 </td>
 
-                                <td
-                                    class="px-4 py-4 text-center
-                                           font-extrabold
-                                           text-rose-600">
-                                    {{ number_format($totalNotCompletedEmployees, 0, ',', '.') }}
+                                <td class="px-4 py-4 text-center">
+                                    <a href="{{ route('progress-report.source-not-completed', [
+                                        'source' => $source,
+                                    ]) }}"
+                                        class="inline-flex items-center justify-center px-3 py-2 font-extrabold transition rounded-lg min-w-14 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-100"
+                                        title="View all not completed employees">
+                                        {{ number_format($totalNotCompletedEmployees, 0, ',', '.') }}
+                                    </a>
                                 </td>
 
                                 <td class="px-4 py-4">
                                     <div class="min-w-[280px]">
-                                        <div
-                                            class="mb-2 flex
-                                                   items-center
-                                                   justify-between">
-                                            <span
-                                                class="font-extrabold
-                                                       text-kanmo-600">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="font-extrabold text-kanmo-600">
                                                 {{ number_format($totalPercentage, 2, ',', '.') }}%
                                             </span>
 
-                                            <span
-                                                class="text-xs
-                                                       text-slate-500">
+                                            <span class="text-xs text-slate-500">
                                                 Overall
                                             </span>
                                         </div>
 
-                                        <div
-                                            class="h-2 overflow-hidden
-                                                   rounded-full
-                                                   bg-stone-200">
-                                            <div class="h-full rounded-full
-                                                       bg-kanmo-500"
+                                        <div class="h-2 overflow-hidden rounded-full bg-stone-200">
+                                            <div class="h-full rounded-full bg-kanmo-500"
                                                 style="width:
                                                     {{ min($totalPercentage, 100) }}%">
                                             </div>

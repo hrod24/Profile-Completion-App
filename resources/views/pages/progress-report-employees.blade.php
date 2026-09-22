@@ -1,8 +1,5 @@
 <x-layout :title="$title">
-    <x-app-shell
-        :title="'Progress Report — ' . $groupName"
-        :subtitle="'Employee profile completion for ' . $groupName . '.'"
-    >
+    <x-app-shell :title="'Progress Report — ' . $groupName" :subtitle="'Employee profile completion for ' . $groupName . '.'">
         {{-- Breadcrumb / Navigation --}}
         <div
             class="mb-5 flex flex-col gap-3
@@ -470,31 +467,22 @@
                                 </td>
 
                                 {{-- Action --}}
-                                <td class="px-4 py-3 text-center">
-                                    <button type="button" data-employee-details-button
-                                        data-details-url="{{ route('dashboard.employee-details', [
-                                            'employeeId' => $employee->employee_id,
-                                        ]) }}"
-                                        class="inline-flex items-center justify-center gap-2
-                                        rounded cursor-pointer border border-slate-200 bg-white
-                                        px-3 py-2 text-xs font-bold text-slate-600
-                                        shadow-sm transition
-                                        hover:border-orange-200 hover:bg-orange-50
-                                        hover:text-orange-600
-                                        focus:outline-none focus:ring-4
-                                        focus:ring-orange-100">
-                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75
-                                            S21.75 12 21.75 12
-                                            18 18.75 12 18.75
-                                            2.25 12 2.25 12Z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                        </svg>
+                                <td class="px-4 py-1">
+                                    <div class="w-fit mx-auto">
+                                        <button type="button"
+                                            class="inline-flex min-h-9 cursor-pointer items-center justify-center
+                                        gap-2 rounded bg-orange-500 px-3.5
+                                        text-xs font-bold text-white transition
+                                        hover:bg-orange-600 focus:outline-none
+                                        focus:ring-4 focus:ring-orange-200"
+                                            data-employee-details-button
+                                            data-details-url="{{ route('dashboard.employee-details', [
+                                            'employeeId' => $employee->employee_id,]) }}"
+                                            aria-haspopup="dialog">
 
-                                        Details
-                                    </button>
+                                            Details
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
@@ -530,7 +518,7 @@
             <div class="relative flex min-h-full items-center
                justify-center p-3 sm:p-6">
                 <div class="relative flex max-h-[92vh] w-full
-                   max-w-6xl flex-col overflow-hidden
+                   max-w-5xl flex-col overflow-hidden
                    rounded-2xl border border-slate-200
                    bg-slate-50 shadow-2xl"
                     role="dialog" aria-modal="true" aria-labelledby="employee-details-modal-title">

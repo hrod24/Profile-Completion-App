@@ -222,6 +222,13 @@ body {
     padding: 26px 24px 40px;
 }
 
+.app-content--full {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+}
+
 .app-page-head {
     display: flex;
     align-items: flex-start;

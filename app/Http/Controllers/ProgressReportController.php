@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use App\Models\BusinessUnit;
 use App\Models\Department;
 use App\Models\employee_details;
@@ -1443,5 +1444,359 @@ class ProgressReportController extends Controller
                 'status' => $status,
             ]
         );
+    }
+
+    public function sourceNotCompletedEmployees(
+        Request $request,
+        string $source
+    ) {
+        $source = strtoupper(
+            trim(
+                urldecode($source)
+            )
+        );
+
+        $allowedSources = [
+            'HEAD OFFICE',
+            'STORE',
+            'WAREHOUSE',
+        ];
+
+        abort_unless(
+            in_array(
+                $source,
+                $allowedSources,
+                true
+            ),
+            404
+        );
+
+        /*
+     * ============================================================
+     * EMPLOYEE REQUIRED FIELDS ONLY
+     * ============================================================
+     *
+     * Field ini dipakai untuk kolom "Data".
+     *
+     * HR required fields TIDAK ditampilkan.
+     */
+        $employeeRequiredFields =
+            array_values(
+                array_unique(
+                    config(
+                        'employee.employee_required_fields',
+                        []
+                    )
+                )
+            );
+
+        $emptyValues = array_map(
+            fn($value) =>
+            strtoupper(
+                trim((string) $value)
+            ),
+            config(
+                'employee.empty_values',
+                []
+            )
+        );
+
+        /*
+     * ============================================================
+     * BASE SOURCE QUERY
+     * ============================================================
+     */
+        $sourceQuery =
+            employee_details::query()
+            ->whereHas(
+                'sourceData',
+                function ($query) use ($source) {
+                    $query->where(
+                        'source',
+                        $source
+                    );
+                }
+            );
+
+        /*
+        * ============================================================
+        * EMPLOYEE PROFILE INCOMPLETE ONLY
+        * ============================================================
+        *
+        * Halaman Reminder hanya menampilkan employee
+        * yang masih memiliki field Employee yang belum lengkap.
+        *
+        * Kelengkapan HR / OD tidak diperhitungkan di halaman ini.
+        */
+        $employeeCompletedIds =
+            employee_details::query()
+            ->select('employee_details.id')
+            ->whereHas(
+                'sourceData',
+                function ($query) use ($source) {
+                    $query->where(
+                        'source',
+                        $source
+                    );
+                }
+            )
+            ->employeeDataComplete();
+
+        /*
+        * Ambil hanya employee yang Employee Profile-nya
+        * belum complete.
+        */
+        $employeeQuery =
+            (clone $sourceQuery)
+            ->whereNotIn(
+                'employee_details.id',
+                $employeeCompletedIds
+            );
+
+        /*
+     * Total Not Completed.
+     */
+        $totalNotCompletedEmployees =
+            (clone $employeeQuery)
+            ->count();
+
+        /*
+     * ============================================================
+     * SEARCH
+     * ============================================================
+     */
+        $search = trim(
+            (string) $request->query(
+                'search',
+                ''
+            )
+        );
+
+        if ($search !== '') {
+            $employeeQuery->where(
+                function ($query) use ($search) {
+                    $query
+                        ->where(
+                            'employee_id',
+                            'like',
+                            "%{$search}%"
+                        )
+                        ->orWhere(
+                            'display_name',
+                            'like',
+                            "%{$search}%"
+                        )
+                        ->orWhere(
+                            'primary_email',
+                            'like',
+                            "%{$search}%"
+                        );
+                }
+            );
+        }
+
+        /*
+     * ============================================================
+     * EMPLOYEE LIST
+     * ============================================================
+     */
+        $employees =
+            $employeeQuery
+            ->with([
+                'businessUnit',
+                'department',
+                'pic',
+                'sourceData',
+            ])
+            ->orderBy('display_name')
+            ->orderBy('employee_id')
+            ->get();
+
+        /*
+     * Tambahkan daftar field Employee yang masih kosong
+     * ke setiap employee.
+     */
+        $employees
+            ->transform(
+                function ($employee) use (
+                    $employeeRequiredFields,
+                    $emptyValues
+                ) {
+                    $missingFields = [];
+
+                    foreach (
+                        $employeeRequiredFields
+                        as $field
+                    ) {
+                        $value =
+                            $employee
+                            ->getAttribute(
+                                $field
+                            );
+
+                        if (
+                            $this->isMissingRequiredValue(
+                                $value,
+                                $emptyValues
+                            )
+                        ) {
+                            $missingFields[] = [
+                                'field' => $field,
+
+                                'label' =>
+                                $this
+                                    ->employeeFieldLabel(
+                                        $field
+                                    ),
+                            ];
+                        }
+                    }
+
+                    $employee->setAttribute(
+                        'missing_employee_fields',
+                        $missingFields
+                    );
+
+                    return $employee;
+                }
+            );
+
+        return view(
+            'pages.progress-report-source-not-completed',
+            [
+                'title' =>
+                "Not Completed Employees - {$source}",
+
+                'source' =>
+                $source,
+
+                'employees' =>
+                $employees,
+
+                'search' =>
+                $search,
+
+                'totalNotCompletedEmployees' =>
+                $totalNotCompletedEmployees,
+            ]
+        );
+    }
+
+    private function isMissingRequiredValue(
+        mixed $value,
+        array $emptyValues
+    ): bool {
+        if (is_null($value)) {
+            return true;
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            $normalized =
+                $value->format(
+                    'Y-m-d'
+                );
+        } else {
+            $normalized =
+                trim(
+                    (string) $value
+                );
+        }
+
+        if ($normalized === '') {
+            return true;
+        }
+
+        return in_array(
+            strtoupper($normalized),
+            $emptyValues,
+            true
+        );
+    }
+
+    private function employeeFieldLabel(
+        string $field
+    ): string {
+        $labels = [
+            'emergency_full_name' =>
+            'Emergency Contact Name',
+
+            'current_address' =>
+            'Current Address',
+
+            'mother_full_name' =>
+            'Mother Full Name',
+
+            'education_level' =>
+            'Education Level',
+
+            'primary_contact_number' =>
+            'Primary Contact Number',
+
+            'tax_number' =>
+            'Tax Number',
+
+            'emergency_contact_no' =>
+            'Emergency Contact Number',
+
+            'current_provinsi' =>
+            'Current Province',
+
+            'primary_email' =>
+            'Primary Email',
+
+            'display_name' =>
+            'Display Name',
+
+            'current_kotamadya_kabupaten' =>
+            'Current City / Regency',
+
+            'major' =>
+            'Major',
+
+            'institution_name' =>
+            'Institution Name',
+
+            'religion' =>
+            'Religion',
+
+            'birth_place' =>
+            'Birth Place',
+
+            'date_of_birth' =>
+            'Date of Birth',
+
+            'marital_status' =>
+            'Marital Status',
+
+            'gender' =>
+            'Gender',
+
+            'ktp_address' =>
+            'KTP Address',
+
+            'blood_group' =>
+            'Blood Group',
+
+            'ktp_number' =>
+            'KTP Number',
+
+            'nationality' =>
+            'Nationality',
+
+            'ijazah_filename' =>
+            'Ijazah',
+
+            'ktp_filename' =>
+            'KTP',
+
+            'npwp_filename' =>
+            'NPWP',
+
+            'kk_filename' =>
+            'KK',
+        ];
+
+        return $labels[$field]
+            ?? Str::headline($field);
     }
 }
