@@ -317,23 +317,20 @@
                         return;
                     }
 
-                    /*
+                    /**
                      * ============================================
                      * TEAMS MESSAGE
                      * ============================================
                      */
 
-                    let message =
-                        `Hi ${name}`;
+                    let message = `Hi ${name}`;
 
                     if (nip) {
-                        message +=
-                            ` (${nip})`;
+                        message += ` (${nip})`;
                     }
 
-                    message +=
-                        `,\n\n` +
-                        `This is a reminder to complete your Employee Profile.`;
+                    message += `,\n\n`;
+                    message += `This is a reminder to complete your Employee Profile.`;
 
                     if (missing) {
                         message +=
@@ -341,8 +338,13 @@
                             `${missing}`;
                     }
 
+
                     message +=
                         `\n\nPlease complete the missing information as soon as possible.` +
+                        `\n\nPlease complete your Employee Profile here:` +
+                        `\n\n<a href="https://epc.kanmoemployeeportal.com/login">Complete Employee Profile</a>` +
+                        `\n\nUsername: ${nip}` +
+                        `\nPassword: ${nip}` +
                         `\n\nThank you.`;
 
                     const teamsLink =

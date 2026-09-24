@@ -152,6 +152,11 @@ Route::middleware([
   )->name('hr-form.edit');
 
   Route::put(
+    '/hr-form/{employee}/personal',
+    [HrFormController::class, 'updatePersonal']
+  )->name('hr-form.update-personal');
+
+  Route::put(
     '/hr-form/{employeeId}',
     [HrFormController::class, 'update']
   )->name('hr-form.update');
