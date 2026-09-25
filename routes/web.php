@@ -66,7 +66,7 @@ Route::middleware([
     '/progress-report/{source}/group/{groupCode}',
     [ProgressReportController::class, 'groupEmployees']
   )->name('progress-report.group-employees');
-  
+
 
   Route::get(
     '/progress-report/{source}',
@@ -79,7 +79,7 @@ Route::middleware([
   Route::get(
     '/progress-report/{source}',
     [ProgressReportController::class, 'source']
-    )->name('progress-report.source');
+  )->name('progress-report.source');
 
   Route::get(
     '/dashboard/employees/export',
@@ -160,6 +160,14 @@ Route::middleware([
     '/hr-form/{employeeId}',
     [HrFormController::class, 'update']
   )->name('hr-form.update');
+
+  Route::get(
+    '/hr-form/{employeeId}/document/{type}',
+    [EmployeeFormController::class, 'adminDocument']
+  )->where(
+    'type',
+    'ijazah|ktp|kk|npwp'
+  )->name('hr-form.document');
 });
 
 /*
@@ -194,11 +202,11 @@ Route::middleware([
       'document',
     ]
   )->where(
-      'type',
-      'ijazah|ktp|kk|npwp'
-    )->name(
-      'employee.form.document'
-    );
+    'type',
+    'ijazah|ktp|kk|npwp'
+  )->name(
+    'employee.form.document'
+  );
 });
 
 require __DIR__ . '/auth.php';

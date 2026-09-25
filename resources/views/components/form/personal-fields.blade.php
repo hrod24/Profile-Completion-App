@@ -366,8 +366,7 @@
 
             <div>
                 @if ($mode === 'employee')
-                    <p
-                        class="text-xs font-bold tracking-wider uppercase text-kanmo-600">
+                    <p class="text-xs font-bold tracking-wider uppercase text-kanmo-600">
                         Step 3
                     </p>
                 @endif
@@ -625,8 +624,7 @@
                             data-copy-address>
 
                         <span>
-                            <span
-                                class="block text-sm font-semibold text-slate-700">
+                            <span class="block text-sm font-semibold text-slate-700">
                                 KTP address is the same as current address
                             </span>
 
@@ -779,8 +777,7 @@
 
             <div>
                 @if ($mode === 'employee')
-                    <p
-                        class="text-xs font-bold tracking-wider uppercase text-kanmo-600">
+                    <p class="text-xs font-bold tracking-wider uppercase text-kanmo-600">
                         Step 4
                     </p>
                 @endif
@@ -980,8 +977,7 @@
 
             <div>
                 @if ($mode === 'employee')
-                    <p
-                        class="text-xs font-bold tracking-wider uppercase text-kanmo-600">
+                    <p class="text-xs font-bold tracking-wider uppercase text-kanmo-600">
                         Step 5
                     </p>
                 @endif
@@ -1089,8 +1085,7 @@
 
             <div>
                 @if ($mode === 'employee')
-                    <p
-                        class="text-xs font-bold tracking-wider uppercase text-kanmo-600">
+                    <p class="text-xs font-bold tracking-wider uppercase text-kanmo-600">
                         Step 6
                     </p>
                 @endif
@@ -1125,12 +1120,14 @@
 
                         $isPdf = $extension === 'pdf';
 
-                        $documentUrl =
-                            $mode === 'employee' && $hasExistingDocument
-                                ? route('employee.form.document', [
+                        $documentUrl = $hasExistingDocument
+                            ? ($mode === 'employee'
+                                ? route('employee.form.document', ['type' => $type])
+                                : route('hr-form.document', [
+                                    'employeeId' => $user->employee_id,
                                     'type' => $type,
-                                ])
-                                : null;
+                                ]))
+                            : null;
                     @endphp
 
 
@@ -1173,10 +1170,10 @@
 
 
                                     <div class="min-w-0">
-                                        <p
-                                            class="text-xs font-semibold text-emerald-700">
+                                        <p class="text-xs font-semibold text-emerald-700">
                                             {{ $label }}
-                                            already saved, upload the newest {{ $label }} to update your information
+                                            already saved, upload the newest {{ $label }} to update the
+                                            information
                                         </p>
 
                                         <p class="mt-0.5
@@ -1190,7 +1187,7 @@
                                 </div>
 
 
-                                @if ($mode === 'employee' && $documentUrl)
+                                @if ($documentUrl)
                                     {{-- IMAGE --}}
                                     @if ($isImage)
                                         <button type="button"
@@ -1265,8 +1262,7 @@
                 @endforeach
             </div>
 
-            <div
-                class="p-4 mt-6 border rounded-2xl border-kanmo-100 bg-gradient-to-r from-kanmo-50 to-orange-50/40">
+            <div class="p-4 mt-6 border rounded-2xl border-kanmo-100 bg-gradient-to-r from-kanmo-50 to-orange-50/40">
                 <div class="flex items-start gap-3">
                     <div
                         class="flex items-center justify-center bg-white rounded-lg shadow-sm h-9 w-9 shrink-0 text-kanmo-600 ring-1 ring-kanmo-100">
@@ -1292,67 +1288,62 @@
         </div>
     </section>
 
-    @if ($mode === 'employee')
-        <div class="fixed inset-0 z-[100]
+    <div class="fixed inset-0 z-[100]
                hidden items-center
                justify-center
                bg-slate-950/70
                p-4 backdrop-blur-sm"
-            data-document-modal aria-hidden="true">
-            <div class="relative flex
+        data-document-modal aria-hidden="true">
+        <div class="relative flex
                    max-h-[92vh]
                    w-full max-w-4xl
                    flex-col overflow-hidden
                    rounded-2xl bg-white
                    shadow-2xl"
-                role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
+            role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
 
-                {{-- HEADER --}}
-                <div
-                    class="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-                    <div class="min-w-0">
-                        <p
-                            class="text-[11px]
+            {{-- HEADER --}}
+            <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+                <div class="min-w-0">
+                    <p
+                        class="text-[11px]
                                font-bold
                                uppercase
                                tracking-wider
                                text-slate-400">
-                            Document Preview
-                        </p>
+                        Document Preview
+                    </p>
 
-                        <h3 id="document-modal-title"
-                            class="mt-1 text-base font-bold truncate text-slate-900"
-                            data-document-modal-title>
-                            Employee Document
-                        </h3>
-                    </div>
-
-
-                    <button type="button"
-                        class="flex items-center justify-center transition bg-white border cursor-pointer h-9 w-9 shrink-0 rounded-xl border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                        data-document-modal-close aria-label="Close document preview">
-                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+                    <h3 id="document-modal-title" class="mt-1 text-base font-bold truncate text-slate-900"
+                        data-document-modal-title>
+                        Employee Document
+                    </h3>
                 </div>
 
 
-                {{-- BODY --}}
-                <div
-                    class="flex min-h-[300px]
+                <button type="button"
+                    class="flex items-center justify-center transition bg-white border cursor-pointer h-9 w-9 shrink-0 rounded-xl border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                    data-document-modal-close aria-label="Close document preview">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+
+            {{-- BODY --}}
+            <div
+                class="flex min-h-[300px]
                        flex-1 items-center
                        justify-center
                        overflow-auto
                        bg-slate-100 p-4">
-                    <div class="flex items-center justify-center" data-document-loading>
-                        <svg class="w-8 h-8 text-orange-500 animate-spin"
-                            viewBox="0 0 24 24" fill="none">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                stroke-width="4"></circle>
+                <div class="flex items-center justify-center" data-document-loading>
+                    <svg class="w-8 h-8 text-orange-500 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                            stroke-width="4"></circle>
 
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0
                                018-8V0C5.373
                                0 0 5.373 0
                                12h4zm2
@@ -1362,22 +1353,21 @@
                                3.042 1.135
                                5.824 3
                                7.938l3-2.647z"></path>
-                        </svg>
-                    </div>
+                    </svg>
+                </div>
 
 
-                    <img src="" alt=""
-                        class="hidden
+                <img src="" alt=""
+                    class="hidden
                            max-h-[72vh]
                            max-w-full
                            rounded-xl
                            object-contain
                            shadow-lg"
-                        data-document-modal-image>
-                </div>
-
+                    data-document-modal-image>
             </div>
+
         </div>
-    @endif
+    </div>
 
 </div>

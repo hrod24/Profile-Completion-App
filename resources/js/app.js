@@ -27,7 +27,7 @@ document.addEventListener(
 function initEmployeeForm() {
     const form =
         document.querySelector(
-            "[data-employee-form]"
+            "[data-employee-form], [data-hr-personal-form]"
         );
 
     if (!form) {
@@ -872,6 +872,11 @@ function initEmployeeForm() {
             }
         }
     );
+
+
+    if (!form.matches("[data-employee-form]")) {
+        return;
+    }
 
 
     /*

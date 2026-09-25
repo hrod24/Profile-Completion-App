@@ -720,7 +720,7 @@ class EmployeeFormController extends Controller
                 $file->getClientOriginalExtension()
             );
 
-            $fileName = $safeEmployeeId. '.' . $extension;
+            $fileName = $safeEmployeeId . '.' . $extension;
 
             $directory =
                 'employee-documents/'
@@ -1196,6 +1196,33 @@ class EmployeeFormController extends Controller
             $this->authenticatedEmployee(
                 $request
             );
+
+        return $this->documentResponse(
+            $employee,
+            $type
+        );
+    }
+
+    public function adminDocument(
+        string $employeeId,
+        string $type
+    ) {
+        $employee =
+            employee_details::where(
+                'employee_id',
+                $employeeId
+            )->firstOrFail();
+
+        return $this->documentResponse(
+            $employee,
+            $type
+        );
+    }
+
+    private function documentResponse(
+        employee_details $employee,
+        string $type
+    ) {
 
         $documentFields = [
             'ijazah' => 'ijazah_filename',
