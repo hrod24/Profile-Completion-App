@@ -186,6 +186,19 @@ Route::middleware([
     '/employee/form/save-step',
     [EmployeeFormController::class, 'saveStep']
   )->name('employee.form.save-step');
+
+  Route::get(
+    '/employee/form/document/{type}',
+    [
+      EmployeeFormController::class,
+      'document',
+    ]
+  )->where(
+      'type',
+      'ijazah|ktp|kk|npwp'
+    )->name(
+      'employee.form.document'
+    );
 });
 
 require __DIR__ . '/auth.php';

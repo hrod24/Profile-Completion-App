@@ -1188,6 +1188,117 @@ class EmployeeFormController extends Controller
         return $validated;
     }
 
+    public function document(
+        Request $request,
+        string $type
+    ) {
+        $employee =
+            $this->authenticatedEmployee(
+                $request
+            );
+
+        $documentFields = [
+            'ijazah' => 'ijazah_filename',
+            'ktp' => 'ktp_filename',
+            'kk' => 'kk_filename',
+            'npwp' => 'npwp_filename',
+        ];
+
+        abort_unless(
+            isset($documentFields[$type]),
+            404
+        );
+
+        $field =
+            $documentFields[$type];
+
+        $path =
+            $employee->{$field};
+
+        abort_if(
+            blank($path),
+            404,
+            'Document belum tersedia.'
+        );
+
+        $disk =
+            Storage::disk('public');
+
+        abort_unless(
+            $disk->exists($path),
+            404,
+            'File document tidak ditemukan.'
+        );
+
+        $extension =
+            strtolower(
+                pathinfo(
+                    $path,
+                    PATHINFO_EXTENSION
+                )
+            );
+
+        /*
+     * IMAGE
+     */
+        if (
+            in_array(
+                $extension,
+                [
+                    'jpg',
+                    'jpeg',
+                    'png',
+                ],
+                true
+            )
+        ) {
+            $mimeType =
+                match ($extension) {
+                    'jpg', 'jpeg' =>
+                    'image/jpeg',
+
+                    'png' =>
+                    'image/png',
+
+                    default =>
+                    'application/octet-stream',
+                };
+
+            return response(
+                $disk->get($path),
+                200,
+                [
+                    'Content-Type' =>
+                    $mimeType,
+
+                    'Content-Disposition' =>
+                    'inline',
+
+                    'Cache-Control' =>
+                    'private, no-cache, no-store',
+                ]
+            );
+        }
+
+        /*
+     * PDF
+     */
+        if ($extension === 'pdf') {
+            return $disk->download(
+                $path,
+                strtoupper($type)
+                    . '_'
+                    . $employee->employee_id
+                    . '.pdf'
+            );
+        }
+
+        abort(
+            415,
+            'Format document tidak didukung.'
+        );
+    }
+
     private function authenticatedEmployee(
         Request $request
     ): employee_details {

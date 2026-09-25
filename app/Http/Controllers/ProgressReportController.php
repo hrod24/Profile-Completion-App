@@ -1784,16 +1784,16 @@ class ProgressReportController extends Controller
             'Nationality',
 
             'ijazah_filename' =>
-            'Ijazah',
+            'Ijazah Attachment',
 
             'ktp_filename' =>
-            'KTP',
+            'KTP Attachment',
 
             'npwp_filename' =>
-            'NPWP',
+            'NPWP Attachment',
 
             'kk_filename' =>
-            'KK',
+            'KK Attachment',
         ];
 
         return $labels[$field]
